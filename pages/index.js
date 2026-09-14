@@ -56,70 +56,234 @@ function AdminView({ matchData, setMatchData }) {
   );
 }
 
-// --- 2. DOMAR VY ---
-function DartScorer({ match, homeTeam, awayTeam, onBack, onSave }) {
+// --- 2. DOMAR VY (N01 EXACT DESIGN & FUNKTION) ---
+function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [homeScore, setHomeScore] = useState(501);
   const [awayScore, setAwayScore] = useState(501);
   const [homeLegs, setHomeLegs] = useState(0);
   const [awayLegs, setAwayLegs] = useState(0);
   const [inputVal, setInputVal] = useState('');
-  const [turn, setTurn] = useState('home');
+  const [turn, setTurn] = useState('home'); 
+  const [rounds, setRounds] = useState([]); // Historik över kast i leget [{ round: 1, home: 100, away: 60 }]
   const [performances, setPerformances] = useState([]);
+  const [warningMsg, setWarningMsg] = useState('');
 
-  const handleNumClick = (num) => setInputVal(prev => prev + num);
-  
+  // Bäst av 3 legs = först till 2 vinstlegs
+  const isMatchFinished = homeLegs === 2 || awayLegs === 2;
+
+  const currentRound = rounds.length + (turn === 'home' ? 1 : 0);
+  const currentDarts = (currentRound - 1) * 3 + (turn === 'away' ? 3 : 0);
+
+  const handleNumClick = (num) => {
+    if (isMatchFinished) return;
+    if (inputVal.length < 3) setInputVal(prev => prev + num);
+  };
+
+  const handleClear = () => setInputVal('');
+
   const handleEnterScore = () => {
-    const score = parseInt(inputVal, 10);
+    if (isMatchFinished) return;
+    const score = parseInt(inputVal || '0', 10);
     if (isNaN(score) || score > 180) return;
 
+    // Registrera 180:or
     if (score === 180) {
       const pName = turn === 'home' ? (match.homePlayer || homeTeam) : (match.awayPlayer || awayTeam);
       setPerformances(prev => [...prev, { team: turn, player: pName, text: '180' }]);
     }
 
+    // Beräkna poäng & Bust
     if (turn === 'home') {
-      const newScore = homeScore - score;
-      if (newScore === 0) { setHomeLegs(l => l + 1); setHomeScore(501); setAwayScore(501); } 
-      else if (newScore > 1) { setHomeScore(newScore); }
+      let newScore = homeScore - score;
+      let wonLeg = false;
+
+      if (newScore === 0) {
+        wonLeg = true;
+      } else if (newScore < 2) {
+        // Bust
+        newScore = homeScore;
+      }
+
+      const updatedRounds = [...rounds, { round: rounds.length + 1, home: score, away: null }];
+      setRounds(updatedRounds);
+
+      if (wonLeg) {
+        const newLegs = homeLegs + 1;
+        setHomeLegs(newLegs);
+        resetLeg();
+        setInputVal('');
+        return;
+      }
+
+      setHomeScore(newScore);
       setTurn('away');
+
     } else {
-      const newScore = awayScore - score;
-      if (newScore === 0) { setAwayLegs(l => l + 1); setHomeScore(501); setAwayScore(501); } 
-      else if (newScore > 1) { setAwayScore(newScore); }
+      let newScore = awayScore - score;
+      let wonLeg = false;
+
+      if (newScore === 0) {
+        wonLeg = true;
+      } else if (newScore < 2) {
+        // Bust
+        newScore = awayScore;
+      }
+
+      const updatedRounds = rounds.map((r, i) => i === rounds.length - 1 ? { ...r, away: score } : r);
+      setRounds(updatedRounds);
+
+      if (wonLeg) {
+        const newLegs = awayLegs + 1;
+        setAwayLegs(newLegs);
+        resetLeg();
+        setInputVal('');
+        return;
+      }
+
+      setAwayScore(newScore);
+
+      // Max 13 omgångar (39 pilar) regel
+      if (updatedRounds.length >= 13) {
+        setWarningMsg('Maximalt antal omgångar (13 omgångar / 39 pilar) nått!');
+        setTimeout(() => {
+          resetLeg();
+          setWarningMsg('');
+        }, 3000);
+        setInputVal('');
+        return;
+      }
+
       setTurn('home');
     }
+
     setInputVal('');
   };
 
+  const resetLeg = () => {
+    setHomeScore(501);
+    setAwayScore(501);
+    setRounds([]);
+    setTurn('home');
+  };
+
   return (
-    <div className="max-w-md mx-auto bg-slate-800 p-4 rounded-xl space-y-4 border border-slate-700 shadow-xl">
-      <button onClick={onBack} className="text-xs text-slate-400 hover:text-white">← Tillbaka till lista</button>
-      <div className="grid grid-cols-2 gap-2 text-center bg-slate-900 p-3 rounded-lg border border-slate-700">
-        <div className={turn === 'home' ? 'ring-2 ring-green-500 rounded p-1 bg-slate-800/50' : 'p-1'}>
-          <div className="text-xs text-slate-400 truncate">{match.homePlayer || homeTeam}</div>
-          <div className="text-5xl font-extrabold text-green-400 my-1">{homeScore}</div>
-          <div className="text-sm">Legs: <span className="font-bold text-white">{homeLegs}</span></div>
+    <div className="max-w-2xl mx-auto bg-black text-white p-2 font-mono select-none border-2 border-gray-800 shadow-2xl rounded">
+      
+      {/* Top Header */}
+      <div className="flex justify-between items-center bg-gray-900 p-2 border-b border-gray-700 text-xs">
+        <button onClick={onBack} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded font-sans">
+          ← Tillbaka
+        </button>
+        <div className="text-yellow-400 font-bold">501 FIRST TO 2 LEGS (MAX 13 ROUNDS)</div>
+        <div className="text-gray-400">DARTS: {currentDarts}/39</div>
+      </div>
+
+      {warningMsg && (
+        <div className="bg-red-600 text-white font-bold text-center py-2 text-sm animate-pulse">
+          {warningMsg}
         </div>
-        <div className={turn === 'away' ? 'ring-2 ring-green-500 rounded p-1 bg-slate-800/50' : 'p-1'}>
-          <div className="text-xs text-slate-400 truncate">{match.awayPlayer || awayTeam}</div>
-          <div className="text-5xl font-extrabold text-green-400 my-1">{awayScore}</div>
-          <div className="text-sm">Legs: <span className="font-bold text-white">{awayLegs}</span></div>
+      )}
+
+      {/* Main N01 Scoreboard Display */}
+      <div className="grid grid-cols-2 gap-1 my-2 text-center">
+        
+        {/* Left Player / Home */}
+        <div className={`p-2 border-2 ${turn === 'home' && !isMatchFinished ? 'border-yellow-400 bg-gray-900' : 'border-gray-800 bg-black'}`}>
+          <div className="text-emerald-400 font-bold truncate text-sm">{match.homePlayer || homeTeam}</div>
+          <div className="text-amber-300 text-6xl font-black my-1 font-mono tracking-tighter">
+            {homeScore}
+          </div>
+          <div className="text-xs text-gray-400 flex justify-between px-2">
+            <span>LEGS: <strong className="text-white text-base">{homeLegs}</strong></span>
+            <span>R: {rounds.length}</span>
+          </div>
         </div>
+
+        {/* Right Player / Away */}
+        <div className={`p-2 border-2 ${turn === 'away' && !isMatchFinished ? 'border-yellow-400 bg-gray-900' : 'border-gray-800 bg-black'}`}>
+          <div className="text-emerald-400 font-bold truncate text-sm">{match.awayPlayer || awayTeam}</div>
+          <div className="text-amber-300 text-6xl font-black my-1 font-mono tracking-tighter">
+            {awayScore}
+          </div>
+          <div className="text-xs text-gray-400 flex justify-between px-2">
+            <span>LEGS: <strong className="text-white text-base">{awayLegs}</strong></span>
+            <span>R: {rounds.length}</span>
+          </div>
+        </div>
+
       </div>
-      <div className="bg-slate-900 p-3 rounded text-right text-3xl font-mono h-14 text-yellow-400 border border-slate-700 flex items-center justify-end">
-        {inputVal || '0'}
+
+      {/* N01 Input display & Keypad Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 my-2">
+        
+        {/* Keypad & Input Box */}
+        <div className="space-y-2">
+          <div className="bg-gray-900 border-2 border-gray-700 p-2 text-right text-4xl font-mono text-yellow-400 h-14 flex items-center justify-end rounded">
+            {inputVal || '0'}
+          </div>
+
+          <div className="grid grid-cols-3 gap-1">
+            {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(n => (
+              <button 
+                key={n} 
+                onClick={() => handleNumClick(n.toString())}
+                disabled={isMatchFinished}
+                className="bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-white font-black text-2xl py-3 rounded border border-gray-700">
+                {n}
+              </button>
+            ))}
+            <button onClick={handleClear} disabled={isMatchFinished} className="bg-red-900 hover:bg-red-800 text-white font-bold text-xl py-3 rounded border border-red-700">
+              C
+            </button>
+            <button onClick={() => handleNumClick('0')} disabled={isMatchFinished} className="bg-gray-800 hover:bg-gray-700 text-white font-black text-2xl py-3 rounded border border-gray-700">
+              0
+            </button>
+            <button onClick={handleEnterScore} disabled={isMatchFinished} className="bg-blue-700 hover:bg-blue-600 text-white font-black text-xl py-3 rounded border border-blue-500">
+              OK
+            </button>
+          </div>
+        </div>
+
+        {/* Turns History Table (N01 Style) */}
+        <div className="bg-gray-900 border border-gray-800 rounded p-2 h-60 overflow-y-auto text-xs font-mono">
+          <table className="w-full text-center">
+            <thead>
+              <tr className="border-b border-gray-700 text-gray-400">
+                <th className="py-1">H</th>
+                <th className="py-1 text-gray-600">#</th>
+                <th className="py-1">A</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {rounds.map((r, i) => (
+                <tr key={i} className="hover:bg-gray-800">
+                  <td className="py-1 text-amber-300 font-bold">{r.home !== null ? r.home : ''}</td>
+                  <td className="py-1 text-gray-600">{r.round}</td>
+                  <td className="py-1 text-amber-300 font-bold">{r.away !== null ? r.away : ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-          <button key={n} onClick={() => handleNumClick(n.toString())} className="bg-slate-700 hover:bg-slate-600 active:bg-slate-500 p-4 text-2xl font-bold rounded text-white">{n}</button>
-        ))}
-        <button onClick={() => setInputVal('')} className="bg-red-800 hover:bg-red-700 p-4 text-lg font-bold rounded text-white">C</button>
-        <button onClick={() => handleNumClick('0')} className="bg-slate-700 hover:bg-slate-600 p-4 text-2xl font-bold rounded text-white">0</button>
-        <button onClick={handleEnterScore} className="bg-green-600 hover:bg-green-500 p-4 text-xl font-bold rounded text-white">OK</button>
-      </div>
-      <button onClick={() => { onSave({ ...match, homeScore: homeLegs, awayScore: awayLegs, status: 'completed' }, performances); onBack(); }} className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold text-white shadow">
-        Spara Resultat
-      </button>
+
+      {/* Skicka Resultat Knapp (Visas när en spelare vunnit 2 legs) */}
+      {isMatchFinished ? (
+        <button 
+          onClick={() => {
+            onSave({ ...match, homeScore: homeLegs, awayScore: awayLegs, status: 'completed' }, performances);
+            onBack();
+          }} 
+          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 text-xl rounded-lg shadow-lg border-2 border-emerald-400 mt-2 animate-bounce">
+          ✓ SKICKA RESULTAT ({homeLegs} - {awayLegs})
+        </button>
+      ) : (
+        <div className="text-center text-xs text-gray-500 py-1">
+          Först till 2 vunna legs lanserar skicka-knappen.
+        </div>
+      )}
+
     </div>
   );
 }
@@ -146,7 +310,7 @@ function RefereeView({ matchData, activeSubMatchId, setActiveSubMatchId, onSaveM
       </div>
     );
   }
-  return <DartScorer match={activeMatch} homeTeam={matchData.homeTeam} awayTeam={matchData.awayTeam} onBack={() => setActiveSubMatchId(null)} onSave={onSaveMatch} />;
+  return <N01Scorer match={activeMatch} homeTeam={matchData.homeTeam} awayTeam={matchData.awayTeam} onBack={() => setActiveSubMatchId(null)} onSave={onSaveMatch} />;
 }
 
 // --- 3. PUBLIK VY (EFTELIKNAR MATCHPROTOKOLLET) ---
@@ -195,48 +359,35 @@ function PublicView({ matchData }) {
             </tr>
           </thead>
           <tbody className="divide-y border-slate-300">
-            {matchData.subMatches.map((sm) => {
-              const homeWon = sm.status === 'completed' && sm.homeScore > sm.awayScore;
-              const awayWon = sm.status === 'completed' && sm.awayScore > sm.homeScore;
-
-              return (
-                <tr key={sm.id} className={`text-center font-semibold ${sm.id === 'AD' ? 'bg-amber-100/60 font-bold' : ''}`}>
-                  {/* Hemmaspelare */}
-                  <td className="p-2 border-r border-slate-300 text-left px-3">
-                    {sm.homePlayer || <span className="text-slate-300 italic">Ej angiven</span>}
-                  </td>
-                  {/* Hemma Set/Legs */}
-                  <td className="p-2 border-r border-slate-300 font-mono text-base bg-slate-50">
-                    {sm.status === 'completed' ? sm.homeScore : ''}
-                  </td>
-                  {/* Match Kod (S1, D1 etc) */}
-                  <td className="p-2 border-r border-slate-900 font-black bg-slate-200 text-slate-800">
-                    {sm.id}
-                  </td>
-                  {/* Borta Set/Legs */}
-                  <td className="p-2 border-r border-slate-300 font-mono text-base bg-slate-50">
-                    {sm.status === 'completed' ? sm.awayScore : ''}
-                  </td>
-                  {/* Bortaspelare */}
-                  <td className="p-2 text-left px-3">
-                    {sm.awayPlayer || <span className="text-slate-300 italic">Ej angiven</span>}
-                  </td>
-                </tr>
-              );
-            })}
+            {matchData.subMatches.map((sm) => (
+              <tr key={sm.id} className={`text-center font-semibold ${sm.id === 'AD' ? 'bg-amber-100/60 font-bold' : ''}`}>
+                <td className="p-2 border-r border-slate-300 text-left px-3">
+                  {sm.homePlayer || <span className="text-slate-300 italic">Ej angiven</span>}
+                </td>
+                <td className="p-2 border-r border-slate-300 font-mono text-base bg-slate-50">
+                  {sm.status === 'completed' ? sm.homeScore : ''}
+                </td>
+                <td className="p-2 border-r border-slate-900 font-black bg-slate-200 text-slate-800">
+                  {sm.id}
+                </td>
+                <td className="p-2 border-r border-slate-300 font-mono text-base bg-slate-50">
+                  {sm.status === 'completed' ? sm.awayScore : ''}
+                </td>
+                <td className="p-2 text-left px-3">
+                  {sm.awayPlayer || <span className="text-slate-300 italic">Ej angiven</span>}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* Avgörande dubbel info */}
       <div className="text-center text-xs font-bold border border-slate-900 bg-white p-1 mb-4">
         Avgörande Dubbel = Middling[cite: 1]
       </div>
 
-      {/* Prestationer & Underskrifter Grid */}
+      {/* Prestationer & Underskrifter */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        
-        {/* Hemmalags Prestationer */}
         <div className="border-2 border-slate-900 bg-white p-3 flex flex-col justify-between">
           <div>
             <div className="text-xs font-bold text-slate-800 uppercase border-b border-slate-300 pb-1 mb-2">
@@ -258,7 +409,6 @@ function PublicView({ matchData }) {
           </div>
         </div>
 
-        {/* Bortalags Prestationer */}
         <div className="border-2 border-slate-900 bg-white p-3 flex flex-col justify-between">
           <div>
             <div className="text-xs font-bold text-slate-800 uppercase border-b border-slate-300 pb-1 mb-2">
@@ -279,10 +429,8 @@ function PublicView({ matchData }) {
             <div className="h-6 border-b border-dashed border-slate-400"></div>
           </div>
         </div>
-
       </div>
 
-      {/* Fot: Datum & Regler för Prestationer */}
       <div className="border-2 border-slate-900 bg-white p-3 text-xs space-y-2">
         <div className="flex justify-between font-bold border-b border-slate-200 pb-1">
           <span>DATUM: {new Date().toISOString().split('T')[0]}[cite: 1]</span>
