@@ -34,11 +34,11 @@ function AdminView({ matchData, setMatchData }) {
       <div className="grid grid-cols-2 gap-4 bg-slate-800 p-4 rounded-lg border border-slate-700">
         <div>
           <label className="block text-xs text-slate-400 uppercase font-bold">Hemmalag</label>
-          <input name="homeTeam" value={matchData.homeTeam} onChange={handleTeamChange} className="w-full bg-slate-700 p-2 rounded text-lg font-bold mt-1 text-white border border-slate-600" />
+          <input name="homeTeam" value={matchData.homeTeam} onChange={handleTeamChange} className="w-full bg-slate-700 p-2 rounded text-lg font-bold mt-1 text-white border border-slate-600 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
           <label className="block text-xs text-slate-400 uppercase font-bold">Bortalag</label>
-          <input name="awayTeam" value={matchData.awayTeam} onChange={handleTeamChange} className="w-full bg-slate-700 p-2 rounded text-lg font-bold mt-1 text-white border border-slate-600" />
+          <input name="awayTeam" value={matchData.awayTeam} onChange={handleTeamChange} className="w-full bg-slate-700 p-2 rounded text-lg font-bold mt-1 text-white border border-slate-600 focus:outline-none focus:border-blue-500" />
         </div>
       </div>
       <div className="bg-slate-800 p-4 rounded-lg space-y-3 border border-slate-700">
@@ -46,9 +46,9 @@ function AdminView({ matchData, setMatchData }) {
         {matchData.subMatches.map((sm) => (
           <div key={sm.id} className="flex items-center gap-2 border-b border-slate-700 pb-2">
             <span className="w-10 font-bold text-yellow-500 text-center">{sm.id}</span>
-            <input placeholder={`Spelare ${matchData.homeTeam}`} value={sm.homePlayer} onChange={(e) => handlePlayerChange(sm.id, 'homePlayer', e.target.value)} className="flex-1 bg-slate-700 p-2 rounded text-sm text-white border border-slate-600" />
-            <span className="text-slate-500 text-xs">VS</span>
-            <input placeholder={`Spelare ${matchData.awayTeam}`} value={sm.awayPlayer} onChange={(e) => handlePlayerChange(sm.id, 'awayPlayer', e.target.value)} className="flex-1 bg-slate-700 p-2 rounded text-sm text-white border border-slate-600" />
+            <input placeholder={`Spelare ${matchData.homeTeam}`} value={sm.homePlayer} onChange={(e) => handlePlayerChange(sm.id, 'homePlayer', e.target.value)} className="flex-1 bg-slate-700 p-2 rounded text-sm text-white border border-slate-600 focus:outline-none focus:border-blue-500" />
+            <span className="text-slate-500 text-xs font-bold">VS</span>
+            <input placeholder={`Spelare ${matchData.awayTeam}`} value={sm.awayPlayer} onChange={(e) => handlePlayerChange(sm.id, 'awayPlayer', e.target.value)} className="flex-1 bg-slate-700 p-2 rounded text-sm text-white border border-slate-600 focus:outline-none focus:border-blue-500" />
           </div>
         ))}
       </div>
@@ -56,7 +56,7 @@ function AdminView({ matchData, setMatchData }) {
   );
 }
 
-// --- 2. DOMAR VY (N01 EXACT DESIGN & FUNKTION) ---
+// --- 2. DOMAR VY (N01 KEYPAD DESIGN - BÄST AV 5 / FÖRST TILL 3) ---
 function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [homeScore, setHomeScore] = useState(501);
   const [awayScore, setAwayScore] = useState(501);
@@ -64,12 +64,12 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [awayLegs, setAwayLegs] = useState(0);
   const [inputVal, setInputVal] = useState('');
   const [turn, setTurn] = useState('home'); 
-  const [rounds, setRounds] = useState([]); // Historik över kast i leget [{ round: 1, home: 100, away: 60 }]
+  const [rounds, setRounds] = useState([]);
   const [performances, setPerformances] = useState([]);
   const [warningMsg, setWarningMsg] = useState('');
 
-  // Bäst av 3 legs = först till 2 vinstlegs
-  const isMatchFinished = homeLegs === 2 || awayLegs === 2;
+  // Bäst av 5 legs = Först till 3
+  const isMatchFinished = homeLegs === 3 || awayLegs === 3;
 
   const currentRound = rounds.length + (turn === 'home' ? 1 : 0);
   const currentDarts = (currentRound - 1) * 3 + (turn === 'away' ? 3 : 0);
@@ -81,18 +81,21 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
 
   const handleClear = () => setInputVal('');
 
+  const handleQuickScore = (score) => {
+    if (isMatchFinished) return;
+    setInputVal(score.toString());
+  };
+
   const handleEnterScore = () => {
     if (isMatchFinished) return;
     const score = parseInt(inputVal || '0', 10);
     if (isNaN(score) || score > 180) return;
 
-    // Registrera 180:or
     if (score === 180) {
       const pName = turn === 'home' ? (match.homePlayer || homeTeam) : (match.awayPlayer || awayTeam);
       setPerformances(prev => [...prev, { team: turn, player: pName, text: '180' }]);
     }
 
-    // Beräkna poäng & Bust
     if (turn === 'home') {
       let newScore = homeScore - score;
       let wonLeg = false;
@@ -100,16 +103,14 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
       if (newScore === 0) {
         wonLeg = true;
       } else if (newScore < 2) {
-        // Bust
-        newScore = homeScore;
+        newScore = homeScore; // Bust
       }
 
       const updatedRounds = [...rounds, { round: rounds.length + 1, home: score, away: null }];
       setRounds(updatedRounds);
 
       if (wonLeg) {
-        const newLegs = homeLegs + 1;
-        setHomeLegs(newLegs);
+        setHomeLegs(l => l + 1);
         resetLeg();
         setInputVal('');
         return;
@@ -125,16 +126,14 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
       if (newScore === 0) {
         wonLeg = true;
       } else if (newScore < 2) {
-        // Bust
-        newScore = awayScore;
+        newScore = awayScore; // Bust
       }
 
       const updatedRounds = rounds.map((r, i) => i === rounds.length - 1 ? { ...r, away: score } : r);
       setRounds(updatedRounds);
 
       if (wonLeg) {
-        const newLegs = awayLegs + 1;
-        setAwayLegs(newLegs);
+        setAwayLegs(l => l + 1);
         resetLeg();
         setInputVal('');
         return;
@@ -142,7 +141,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
 
       setAwayScore(newScore);
 
-      // Max 13 omgångar (39 pilar) regel
+      // Max 13 omgångar (39 pilar)
       if (updatedRounds.length >= 13) {
         setWarningMsg('Maximalt antal omgångar (13 omgångar / 39 pilar) nått!');
         setTimeout(() => {
@@ -167,98 +166,111 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-black text-white p-2 font-mono select-none border-2 border-gray-800 shadow-2xl rounded">
+    <div className="max-w-3xl mx-auto bg-slate-950 text-white p-3 font-mono select-none border border-slate-800 shadow-2xl rounded-xl">
       
-      {/* Top Header */}
-      <div className="flex justify-between items-center bg-gray-900 p-2 border-b border-gray-700 text-xs">
-        <button onClick={onBack} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded font-sans">
-          ← Tillbaka
+      {/* Header bar */}
+      <div className="flex justify-between items-center bg-slate-900 p-3 rounded-t-lg border-b border-slate-800 text-xs">
+        <button onClick={onBack} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded font-sans font-bold border border-slate-700">
+          ← Avbryt
         </button>
-        <div className="text-yellow-400 font-bold">501 FIRST TO 2 LEGS (MAX 13 ROUNDS)</div>
-        <div className="text-gray-400">DARTS: {currentDarts}/39</div>
+        <div className="text-yellow-400 font-extrabold tracking-wider">501 - BÄST AV 5 (FÖRST TILL 3)</div>
+        <div className="text-slate-400 font-bold">PILAR: <span className="text-emerald-400">{currentDarts}/39</span></div>
       </div>
 
       {warningMsg && (
-        <div className="bg-red-600 text-white font-bold text-center py-2 text-sm animate-pulse">
+        <div className="bg-red-600 text-white font-bold text-center py-2 text-xs uppercase tracking-widest animate-pulse">
           {warningMsg}
         </div>
       )}
 
-      {/* Main N01 Scoreboard Display */}
-      <div className="grid grid-cols-2 gap-1 my-2 text-center">
-        
-        {/* Left Player / Home */}
-        <div className={`p-2 border-2 ${turn === 'home' && !isMatchFinished ? 'border-yellow-400 bg-gray-900' : 'border-gray-800 bg-black'}`}>
-          <div className="text-emerald-400 font-bold truncate text-sm">{match.homePlayer || homeTeam}</div>
-          <div className="text-amber-300 text-6xl font-black my-1 font-mono tracking-tighter">
+      {/* Modernised N01 Scoreboard */}
+      <div className="grid grid-cols-2 gap-2 my-2 text-center">
+        {/* Home Player */}
+        <div className={`p-3 rounded-lg border-2 transition-all ${turn === 'home' && !isMatchFinished ? 'border-emerald-500 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-slate-800 bg-slate-900/50'}`}>
+          <div className="text-emerald-400 font-bold truncate text-sm uppercase tracking-wider">{match.homePlayer || homeTeam}</div>
+          <div className="text-amber-300 text-6xl font-black my-1 tracking-tighter drop-shadow-[0_2px_8px_rgba(252,211,77,0.3)]">
             {homeScore}
           </div>
-          <div className="text-xs text-gray-400 flex justify-between px-2">
-            <span>LEGS: <strong className="text-white text-base">{homeLegs}</strong></span>
-            <span>R: {rounds.length}</span>
+          <div className="text-xs text-slate-400 flex justify-between px-2 pt-1 border-t border-slate-800/80">
+            <span>LEGS: <strong className="text-white text-base font-bold">{homeLegs}</strong></span>
+            <span>OMG: {rounds.length}</span>
           </div>
         </div>
 
-        {/* Right Player / Away */}
-        <div className={`p-2 border-2 ${turn === 'away' && !isMatchFinished ? 'border-yellow-400 bg-gray-900' : 'border-gray-800 bg-black'}`}>
-          <div className="text-emerald-400 font-bold truncate text-sm">{match.awayPlayer || awayTeam}</div>
-          <div className="text-amber-300 text-6xl font-black my-1 font-mono tracking-tighter">
+        {/* Away Player */}
+        <div className={`p-3 rounded-lg border-2 transition-all ${turn === 'away' && !isMatchFinished ? 'border-emerald-500 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-slate-800 bg-slate-900/50'}`}>
+          <div className="text-emerald-400 font-bold truncate text-sm uppercase tracking-wider">{match.awayPlayer || awayTeam}</div>
+          <div className="text-amber-300 text-6xl font-black my-1 tracking-tighter drop-shadow-[0_2px_8px_rgba(252,211,77,0.3)]">
             {awayScore}
           </div>
-          <div className="text-xs text-gray-400 flex justify-between px-2">
-            <span>LEGS: <strong className="text-white text-base">{awayLegs}</strong></span>
-            <span>R: {rounds.length}</span>
+          <div className="text-xs text-slate-400 flex justify-between px-2 pt-1 border-t border-slate-800/80">
+            <span>LEGS: <strong className="text-white text-base font-bold">{awayLegs}</strong></span>
+            <span>OMG: {rounds.length}</span>
           </div>
         </div>
-
       </div>
 
-      {/* N01 Input display & Keypad Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 my-2">
+      {/* Main Control Panel (Keypad + N01 Snabbknappar + Historik) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 my-2">
         
-        {/* Keypad & Input Box */}
-        <div className="space-y-2">
-          <div className="bg-gray-900 border-2 border-gray-700 p-2 text-right text-4xl font-mono text-yellow-400 h-14 flex items-center justify-end rounded">
+        {/* Keypad & Quick buttons (Col 8) */}
+        <div className="md:col-span-8 space-y-2">
+          
+          {/* Display */}
+          <div className="bg-slate-900 border-2 border-slate-800 p-2 text-right text-4xl font-mono text-yellow-400 h-14 flex items-center justify-end rounded-lg shadow-inner">
             {inputVal || '0'}
           </div>
 
-          <div className="grid grid-cols-3 gap-1">
-            {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(n => (
-              <button 
-                key={n} 
-                onClick={() => handleNumClick(n.toString())}
-                disabled={isMatchFinished}
-                className="bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-white font-black text-2xl py-3 rounded border border-gray-700">
-                {n}
-              </button>
-            ))}
-            <button onClick={handleClear} disabled={isMatchFinished} className="bg-red-900 hover:bg-red-800 text-white font-bold text-xl py-3 rounded border border-red-700">
-              C
-            </button>
-            <button onClick={() => handleNumClick('0')} disabled={isMatchFinished} className="bg-gray-800 hover:bg-gray-700 text-white font-black text-2xl py-3 rounded border border-gray-700">
-              0
-            </button>
-            <button onClick={handleEnterScore} disabled={isMatchFinished} className="bg-blue-700 hover:bg-blue-600 text-white font-black text-xl py-3 rounded border border-blue-500">
-              OK
-            </button>
+          <div className="grid grid-cols-4 gap-1.5">
+            {/* Rad 1 */}
+            <button onClick={() => handleNumClick('7')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">7</button>
+            <button onClick={() => handleNumClick('8')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">8</button>
+            <button onClick={() => handleNumClick('9')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">9</button>
+            <button onClick={() => handleQuickScore(26)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm py-3 rounded-lg border border-slate-800">26</button>
+
+            {/* Rad 2 */}
+            <button onClick={() => handleNumClick('4')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">4</button>
+            <button onClick={() => handleNumClick('5')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">5</button>
+            <button onClick={() => handleNumClick('6')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">6</button>
+            <button onClick={() => handleQuickScore(41)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm py-3 rounded-lg border border-slate-800">41</button>
+
+            {/* Rad 3 */}
+            <button onClick={() => handleNumClick('1')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">1</button>
+            <button onClick={() => handleNumClick('2')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">2</button>
+            <button onClick={() => handleNumClick('3')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">3</button>
+            <button onClick={() => handleQuickScore(60)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm py-3 rounded-lg border border-slate-800">60</button>
+
+            {/* Rad 4 */}
+            <button onClick={handleClear} disabled={isMatchFinished} className="bg-red-900/80 hover:bg-red-800 text-white font-bold text-xl py-3 rounded-lg border border-red-700">C</button>
+            <button onClick={() => handleNumClick('0')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">0</button>
+            <button onClick={handleEnterScore} disabled={isMatchFinished} className="bg-blue-600 hover:bg-blue-500 active:bg-blue-400 text-white font-black text-xl py-3 rounded-lg border border-blue-400 shadow-md">OK</button>
+            <button onClick={() => handleQuickScore(100)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm py-3 rounded-lg border border-slate-800">100</button>
+          </div>
+
+          {/* Snabbknappar rad 2 */}
+          <div className="grid grid-cols-4 gap-1.5 pt-1">
+            <button onClick={() => handleQuickScore(45)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs py-2 rounded-lg border border-slate-800">45</button>
+            <button onClick={() => handleQuickScore(85)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs py-2 rounded-lg border border-slate-800">85</button>
+            <button onClick={() => handleQuickScore(140)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs py-2 rounded-lg border border-slate-800">140</button>
+            <button onClick={() => handleQuickScore(180)} disabled={isMatchFinished} className="bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 font-extrabold text-xs py-2 rounded-lg border border-yellow-600/50">180</button>
           </div>
         </div>
 
-        {/* Turns History Table (N01 Style) */}
-        <div className="bg-gray-900 border border-gray-800 rounded p-2 h-60 overflow-y-auto text-xs font-mono">
+        {/* Turns History Table (Col 4) */}
+        <div className="md:col-span-4 bg-slate-900/80 border border-slate-800 rounded-lg p-2 h-[310px] overflow-y-auto text-xs font-mono">
           <table className="w-full text-center">
             <thead>
-              <tr className="border-b border-gray-700 text-gray-400">
-                <th className="py-1">H</th>
-                <th className="py-1 text-gray-600">#</th>
-                <th className="py-1">A</th>
+              <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px]">
+                <th className="py-1">Hem</th>
+                <th className="py-1 text-slate-600">#</th>
+                <th className="py-1">Borta</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody className="divide-y divide-slate-800/50">
               {rounds.map((r, i) => (
-                <tr key={i} className="hover:bg-gray-800">
+                <tr key={i} className="hover:bg-slate-800/40">
                   <td className="py-1 text-amber-300 font-bold">{r.home !== null ? r.home : ''}</td>
-                  <td className="py-1 text-gray-600">{r.round}</td>
+                  <td className="py-1 text-slate-600 text-[10px]">{r.round}</td>
                   <td className="py-1 text-amber-300 font-bold">{r.away !== null ? r.away : ''}</td>
                 </tr>
               ))}
@@ -268,19 +280,19 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
 
       </div>
 
-      {/* Skicka Resultat Knapp (Visas när en spelare vunnit 2 legs) */}
+      {/* Skicka Resultat Knapp (Visas när en spelare vunnit 3 legs) */}
       {isMatchFinished ? (
         <button 
           onClick={() => {
             onSave({ ...match, homeScore: homeLegs, awayScore: awayLegs, status: 'completed' }, performances);
             onBack();
           }} 
-          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 text-xl rounded-lg shadow-lg border-2 border-emerald-400 mt-2 animate-bounce">
+          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 text-xl rounded-lg shadow-[0_0_20px_rgba(16,185,129,0.4)] border-2 border-emerald-400 mt-2 animate-bounce uppercase tracking-wider">
           ✓ SKICKA RESULTAT ({homeLegs} - {awayLegs})
         </button>
       ) : (
-        <div className="text-center text-xs text-gray-500 py-1">
-          Först till 2 vunna legs lanserar skicka-knappen.
+        <div className="text-center text-[11px] text-slate-500 py-1 uppercase tracking-wider">
+          Först till 3 vunna legs låser upp skicka-knappen.
         </div>
       )}
 
