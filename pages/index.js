@@ -14,34 +14,66 @@ const INITIAL_SUB_MATCHES = [
   { id: 'AD', name: 'Avgörande Dubbel', type: 'double', homePlayer: '', awayPlayer: '', homeScore: 0, awayScore: 0, status: 'pending' }
 ];
 
+// --- 1. ADMIN VY (MED MANUELL RESULTATREDIGERING) ---
 function AdminView({ matchData, setMatchData }) {
   const handleTeamChange = (e) => setMatchData({ ...matchData, [e.target.name]: e.target.value });
-  const handlePlayerChange = (id, field, value) => {
-    const updated = matchData.subMatches.map(sm => sm.id === id ? { ...sm, [field]: value } : sm);
+  
+  const handleSubMatchChange = (id, field, value) => {
+    const updated = matchData.subMatches.map(sm => {
+      if (sm.id === id) {
+        const updatedMatch = { ...sm, [field]: value };
+        // Om man ändrar poäng eller status manuellt
+        if (field === 'homeScore' || field === 'awayScore') {
+          updatedMatch[field] = parseInt(value, 10) || 0;
+        }
+        return updatedMatch;
+      }
+      return sm;
+    });
     setMatchData({ ...matchData, subMatches: updated });
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-      <h1 style={{ color: '#60a5fa', fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>Admin - Laguppställning</h1>
+    <div style={{ maxWidth: '750px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      <h1 style={{ color: '#60a5fa', fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>Admin - Lag & Resultatredigering</h1>
+      
+      {/* Lag-namn */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', backgroundColor: '#1e293b', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
         <div>
-          <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>HEMMALAG</label>
+          <label style={{ display: 'block', color: '#94a3b8', fontSize: '11px', fontWeight: 'bold' }}>HEMMALAG</label>
           <input name="homeTeam" value={matchData.homeTeam} onChange={handleTeamChange} style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', marginTop: '4px' }} />
         </div>
         <div>
-          <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>BORTALAG</label>
+          <label style={{ display: 'block', color: '#94a3b8', fontSize: '11px', fontWeight: 'bold' }}>BORTALAG</label>
           <input name="awayTeam" value={matchData.awayTeam} onChange={handleTeamChange} style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', marginTop: '4px' }} />
         </div>
       </div>
+
+      {/* Delmatcher & Manuell Resultatjustering */}
       <div style={{ backgroundColor: '#1e293b', padding: '15px', borderRadius: '8px' }}>
-        <h2 style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>SPELARE PER MATCH</h2>
+        <h2 style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>SPELARE OCH RESULTAT PER MATCH</h2>
+        
         {matchData.subMatches.map((sm) => (
-          <div key={sm.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #334155', paddingBottom: '8px', marginBottom: '8px' }}>
-            <span style={{ width: '30px', color: '#eab308', fontWeight: 'bold', textAlign: 'center' }}>{sm.id}</span>
-            <input placeholder={`Spelare ${matchData.homeTeam}`} value={sm.homePlayer} onChange={(e) => handlePlayerChange(sm.id, 'homePlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
-            <span style={{ color: '#64748b', fontSize: '12px' }}>VS</span>
-            <input placeholder={`Spelare ${matchData.awayTeam}`} value={sm.awayPlayer} onChange={(e) => handlePlayerChange(sm.id, 'awayPlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
+          <div key={sm.id} style={{ borderBottom: '1px solid #334155', paddingBottom: '10px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ width: '30px', color: '#eab308', fontWeight: 'bold', textAlign: 'center' }}>{sm.id}</span>
+              <input placeholder={`Spelare ${matchData.homeTeam}`} value={sm.homePlayer} onChange={(e) => handleSubMatchChange(sm.id, 'homePlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
+              <span style={{ color: '#64748b', fontSize: '12px' }}>VS</span>
+              <input placeholder={`Spelare ${matchData.awayTeam}`} value={sm.awayPlayer} onChange={(e) => handleSubMatchChange(sm.id, 'awayPlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
+            </div>
+
+            {/* Manuell Resultat-kontroll */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#94a3b8' }}>
+              <span>Manúellt resultat (legs):</span>
+              <input type="number" min="0" max="3" value={sm.homeScore} onChange={(e) => handleSubMatchChange(sm.id, 'homeScore', e.target.value)} style={{ width: '45px', backgroundColor: '#0f172a', color: '#fcd34d', border: '1px solid #475569', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold', padding: '2px' }} />
+              <span>-</span>
+              <input type="number" min="0" max="3" value={sm.awayScore} onChange={(e) => handleSubMatchChange(sm.id, 'awayScore', e.target.value)} style={{ width: '45px', backgroundColor: '#0f172a', color: '#fcd34d', border: '1px solid #475569', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold', padding: '2px' }} />
+              
+              <select value={sm.status} onChange={(e) => handleSubMatchChange(sm.id, 'status', e.target.value)} style={{ backgroundColor: '#0f172a', color: '#fff', border: '1px solid #475569', borderRadius: '4px', padding: '3px 6px' }}>
+                <option value="pending">Ej klar</option>
+                <option value="completed">Klar (Spelad)</option>
+              </select>
+            </div>
           </div>
         ))}
       </div>
@@ -49,11 +81,12 @@ function AdminView({ matchData, setMatchData }) {
   );
 }
 
+// --- 2. DOMAR VY (N01 SCORER) ---
 function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [homeScore, setHomeScore] = useState(501);
   const [awayScore, setAwayScore] = useState(501);
-  const [homeLegs, setHomeLegs] = useState(0);
-  const [awayLegs, setAwayLegs] = useState(0);
+  const [homeLegs, setHomeLegs] = useState(match.homeScore || 0);
+  const [awayLegs, setAwayLegs] = useState(match.awayScore || 0);
   const [inputVal, setInputVal] = useState('');
   const [turn, setTurn] = useState('home');
   const [rounds, setRounds] = useState([]);
@@ -249,19 +282,25 @@ function RefereeView({ matchData, activeSubMatchId, setActiveSubMatchId, onSaveM
   return <N01Scorer match={activeMatch} homeTeam={matchData.homeTeam} awayTeam={matchData.awayTeam} onBack={() => setActiveSubMatchId(null)} onSave={onSaveMatch} />;
 }
 
+// --- 3. PUBLIK VY (RENSAT OCH APPASSAT FÖR ONLINE) ---
 function PublicView({ matchData }) {
   const totalHomeScore = matchData.subMatches.reduce((acc, sm) => acc + (sm.homeScore > sm.awayScore ? 1 : 0), 0);
   const totalAwayScore = matchData.subMatches.reduce((acc, sm) => acc + (sm.awayScore > sm.homeScore ? 1 : 0), 0);
   const homePerf = matchData.performances.filter(p => p.team === 'home');
   const awayPerf = matchData.performances.filter(p => p.team === 'away');
+  
+  const completedCount = matchData.subMatches.filter(sm => sm.status === 'completed').length;
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: '#fffbeb', color: '#0f172a', padding: '20px', borderRadius: '8px', border: '2px solid #fde68a', fontFamily: 'sans-serif' }}>
+      
+      {/* Protokoll Header */}
       <div style={{ border: '3px solid #0f172a', padding: '10px', textAlign: 'center', backgroundColor: '#fff', marginBottom: '15px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '900', letterSpacing: '2px', margin: 0 }}>PUBSERIEN</h1>
-        <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', margin: 0 }}>Matchprotokoll Dart</p>
+        <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', margin: 0 }}>Matchprotokoll Dart Online</p>
       </div>
 
+      {/* Lag-rubriker & Totalresultat */}
       <div style={{ display: 'grid', gridTemplateColumns: '5fr 2fr 5fr', border: '2px solid #0f172a', backgroundColor: '#fff', marginBottom: '15px', padding: '10px', textAlign: 'center', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>HEMMALAG</div>
@@ -277,6 +316,7 @@ function PublicView({ matchData }) {
         </div>
       </div>
 
+      {/* Delmatcher Tabell */}
       <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', marginBottom: '15px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '13px' }}>
           <thead>
@@ -302,38 +342,59 @@ function PublicView({ matchData }) {
         </table>
       </div>
 
-      <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'bold', border: '1px solid #0f172a', backgroundColor: '#fff', padding: '4px', marginBottom: '15px' }}>
-        Avgörande Dubbel = Middling[cite: 1]
-      </div>
-
+      {/* Prestationer per lag */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
         <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '10px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '6px' }}>PRESTATIONER: HEMMALAG[cite: 1]</div>
-          <div style={{ minHeight: '40px', fontSize: '11px' }}>
-            {homePerf.map((p, i) => <div key={i}>🎯 {p.player}: {p.text}</div>)}
+          <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '6px' }}>PRESTATIONER: HEMMALAG</div>
+          <div style={{ minHeight: '50px', fontSize: '11px' }}>
+            {homePerf.length > 0 ? (
+              homePerf.map((p, i) => <div key={i}>🎯 {p.player}: {p.text}</div>)
+            ) : (
+              <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Inga registrerade</span>
+            )}
           </div>
-          <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: '4px', marginTop: '10px', fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>UNDERSKRIFT: HEMMALAG[cite: 1]</div>
         </div>
 
         <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '10px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '6px' }}>PRESTATIONER: BORTALAG[cite: 1]</div>
-          <div style={{ minHeight: '40px', fontSize: '11px' }}>
-            {awayPerf.map((p, i) => <div key={i}>🎯 {p.player}: {p.text}</div>)}
+          <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '6px' }}>PRESTATIONER: BORTALAG</div>
+          <div style={{ minHeight: '50px', fontSize: '11px' }}>
+            {awayPerf.length > 0 ? (
+              awayPerf.map((p, i) => <div key={i}>🎯 {p.player}: {p.text}</div>)
+            ) : (
+              <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Inga registrerade</span>
+            )}
           </div>
-          <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: '4px', marginTop: '10px', fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>UNDERSKRIFT: BORTALAG[cite: 1]</div>
         </div>
       </div>
 
-      <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '8px', fontSize: '11px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '4px' }}>
-          <span>DATUM: {new Date().toISOString().split('T')[0]}[cite: 1]</span>
-          <span>MATCH NR: ______[cite: 1]</span>
-        </div>
-        <div style={{ color: '#475569', fontSize: '10px' }}>
-          <div><strong>Herrar:</strong> Korta set 9-20 pilar / Höga utgångar 100+ / 180:or[cite: 1]</div>
-          <div><strong>Damer:</strong> Korta set 9-25 pilar / Höga utgångar 70+ / 180:or[cite: 1]</div>
+      {/* Ny Online-sektion: Lagsammanställning (ersätter underskrifterna) */}
+      <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '10px', marginBottom: '15px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '8px', textAlign: 'center' }}>LAGSAMMANSTÄLLNING & STATUS</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', textAlign: 'center', fontSize: '12px' }}>
+          <div>
+            <div style={{ color: '#64748b', fontSize: '10px', fontWeight: 'bold' }}>SPELADE MATCHER</div>
+            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{completedCount} / 11</div>
+          </div>
+          <div>
+            <div style={{ color: '#64748b', fontSize: '10px', fontWeight: 'bold' }}>TOTALT 180:OR</div>
+            <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#eab308' }}>🎯 {matchData.performances.filter(p => p.text === '180').length} st</div>
+          </div>
+          <div>
+            <div style={{ color: '#64748b', fontSize: '10px', fontWeight: 'bold' }}>MATCHER KVAR</div>
+            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{11 - completedCount} st</div>
+          </div>
         </div>
       </div>
+
+      {/* Regler för Prestationer (Snygg och tydlig ruta) */}
+      <div style={{ border: '2px solid #0f172a', backgroundColor: '#f8fafc', padding: '10px', fontSize: '11px', borderRadius: '4px' }}>
+        <div style={{ fontWeight: 'bold', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '6px', color: '#334155' }}>REGLER FÖR PRESTATIONER:</div>
+        <div style={{ color: '#475569', lineHeight: '1.5' }}>
+          <div>• <strong>Prestation för herrar:</strong> Korta set (9-20 pilar) / Höga utgångar (100+) / 180:or</div>
+          <div>• <strong>Prestation för damer:</strong> Korta set (9-25 pilar) / Höga utgångar (70+) / 180:or</div>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -358,7 +419,7 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#fff', paddingBottom: '30px', fontFamily: 'sans-serif' }}>
-      <nav style={{ backgroundColor: '#1e293b', padding: '10px', display: 'flex', justifyContent: 'center', gap: '10px', borderBottom: '1px solid #334155', sticky: 'top' }}>
+      <nav style={{ backgroundColor: '#1e293b', padding: '10px', display: 'flex', justifyContent: 'center', gap: '10px', borderBottom: '1px solid #334155', position: 'sticky', top: 0, zIndex: 50 }}>
         <button onClick={() => setCurrentView('admin')} style={{ backgroundColor: currentView === 'admin' ? '#2563eb' : '#334155', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>1. Admin</button>
         <button onClick={() => setCurrentView('referee')} style={{ backgroundColor: currentView === 'referee' ? '#16a34a' : '#334155', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>2. Domare</button>
         <button onClick={() => setCurrentView('public')} style={{ backgroundColor: currentView === 'public' ? '#9333ea' : '#334155', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>3. Publik (Matchprotokoll)</button>
