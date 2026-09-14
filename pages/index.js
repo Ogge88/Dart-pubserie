@@ -1,7 +1,5 @@
-import Head from 'next/head';
 import React, { useState } from 'react';
 
-// --- DATASTRUKTUR ---
 const INITIAL_SUB_MATCHES = [
   { id: 'S1', name: 'Singel 1', type: 'single', homePlayer: '', awayPlayer: '', homeScore: 0, awayScore: 0, status: 'pending' },
   { id: 'S2', name: 'Singel 2', type: 'single', homePlayer: '', awayPlayer: '', homeScore: 0, awayScore: 0, status: 'pending' },
@@ -16,40 +14,34 @@ const INITIAL_SUB_MATCHES = [
   { id: 'AD', name: 'Avgörande Dubbel', type: 'double', homePlayer: '', awayPlayer: '', homeScore: 0, awayScore: 0, status: 'pending' }
 ];
 
-// --- 1. ADMIN VY ---
 function AdminView({ matchData, setMatchData }) {
-  const handleTeamChange = (e) => {
-    setMatchData({ ...matchData, [e.target.name]: e.target.value });
-  };
-
+  const handleTeamChange = (e) => setMatchData({ ...matchData, [e.target.name]: e.target.value });
   const handlePlayerChange = (id, field, value) => {
-    const updated = matchData.subMatches.map(sm => 
-      sm.id === id ? { ...sm, [field]: value } : sm
-    );
+    const updated = matchData.subMatches.map(sm => sm.id === id ? { ...sm, [field]: value } : sm);
     setMatchData({ ...matchData, subMatches: updated });
   };
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-blue-400">Admin - Laguppställning</h1>
-      <div className="grid grid-cols-2 gap-4 bg-slate-800 p-4 rounded-lg border border-slate-700">
+    <div style={{ maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      <h1 style={{ color: '#60a5fa', fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>Admin - Laguppställning</h1>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', backgroundColor: '#1e293b', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
         <div>
-          <label className="block text-xs text-slate-400 uppercase font-bold">Hemmalag</label>
-          <input name="homeTeam" value={matchData.homeTeam} onChange={handleTeamChange} className="w-full bg-slate-700 p-2 rounded text-lg font-bold mt-1 text-white border border-slate-600 focus:outline-none focus:border-blue-500" />
+          <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>HEMMALAG</label>
+          <input name="homeTeam" value={matchData.homeTeam} onChange={handleTeamChange} style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', marginTop: '4px' }} />
         </div>
         <div>
-          <label className="block text-xs text-slate-400 uppercase font-bold">Bortalag</label>
-          <input name="awayTeam" value={matchData.awayTeam} onChange={handleTeamChange} className="w-full bg-slate-700 p-2 rounded text-lg font-bold mt-1 text-white border border-slate-600 focus:outline-none focus:border-blue-500" />
+          <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>BORTALAG</label>
+          <input name="awayTeam" value={matchData.awayTeam} onChange={handleTeamChange} style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', marginTop: '4px' }} />
         </div>
       </div>
-      <div className="bg-slate-800 p-4 rounded-lg space-y-3 border border-slate-700">
-        <h2 className="text-sm font-bold text-slate-300 uppercase">Spelare per match</h2>
+      <div style={{ backgroundColor: '#1e293b', padding: '15px', borderRadius: '8px' }}>
+        <h2 style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>SPELARE PER MATCH</h2>
         {matchData.subMatches.map((sm) => (
-          <div key={sm.id} className="flex items-center gap-2 border-b border-slate-700 pb-2">
-            <span className="w-10 font-bold text-yellow-500 text-center">{sm.id}</span>
-            <input placeholder={`Spelare ${matchData.homeTeam}`} value={sm.homePlayer} onChange={(e) => handlePlayerChange(sm.id, 'homePlayer', e.target.value)} className="flex-1 bg-slate-700 p-2 rounded text-sm text-white border border-slate-600 focus:outline-none focus:border-blue-500" />
-            <span className="text-slate-500 text-xs font-bold">VS</span>
-            <input placeholder={`Spelare ${matchData.awayTeam}`} value={sm.awayPlayer} onChange={(e) => handlePlayerChange(sm.id, 'awayPlayer', e.target.value)} className="flex-1 bg-slate-700 p-2 rounded text-sm text-white border border-slate-600 focus:outline-none focus:border-blue-500" />
+          <div key={sm.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #334155', paddingBottom: '8px', marginBottom: '8px' }}>
+            <span style={{ width: '30px', color: '#eab308', fontWeight: 'bold', textAlign: 'center' }}>{sm.id}</span>
+            <input placeholder={`Spelare ${matchData.homeTeam}`} value={sm.homePlayer} onChange={(e) => handlePlayerChange(sm.id, 'homePlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
+            <span style={{ color: '#64748b', fontSize: '12px' }}>VS</span>
+            <input placeholder={`Spelare ${matchData.awayTeam}`} value={sm.awayPlayer} onChange={(e) => handlePlayerChange(sm.id, 'awayPlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
           </div>
         ))}
       </div>
@@ -57,21 +49,18 @@ function AdminView({ matchData, setMatchData }) {
   );
 }
 
-// --- 2. DOMAR VY (N01 KEYPAD DESIGN - BÄST AV 5 / FÖRST TILL 3) ---
 function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [homeScore, setHomeScore] = useState(501);
   const [awayScore, setAwayScore] = useState(501);
   const [homeLegs, setHomeLegs] = useState(0);
   const [awayLegs, setAwayLegs] = useState(0);
   const [inputVal, setInputVal] = useState('');
-  const [turn, setTurn] = useState('home'); 
+  const [turn, setTurn] = useState('home');
   const [rounds, setRounds] = useState([]);
   const [performances, setPerformances] = useState([]);
   const [warningMsg, setWarningMsg] = useState('');
 
-  // Bäst av 5 legs = Först till 3
   const isMatchFinished = homeLegs === 3 || awayLegs === 3;
-
   const currentRound = rounds.length + (turn === 'home' ? 1 : 0);
   const currentDarts = (currentRound - 1) * 3 + (turn === 'away' ? 3 : 0);
 
@@ -81,7 +70,6 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   };
 
   const handleClear = () => setInputVal('');
-
   const handleQuickScore = (score) => {
     if (isMatchFinished) return;
     setInputVal(score.toString());
@@ -100,12 +88,8 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     if (turn === 'home') {
       let newScore = homeScore - score;
       let wonLeg = false;
-
-      if (newScore === 0) {
-        wonLeg = true;
-      } else if (newScore < 2) {
-        newScore = homeScore; // Bust
-      }
+      if (newScore === 0) wonLeg = true;
+      else if (newScore < 2) newScore = homeScore;
 
       const updatedRounds = [...rounds, { round: rounds.length + 1, home: score, away: null }];
       setRounds(updatedRounds);
@@ -116,19 +100,13 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         setInputVal('');
         return;
       }
-
       setHomeScore(newScore);
       setTurn('away');
-
     } else {
       let newScore = awayScore - score;
       let wonLeg = false;
-
-      if (newScore === 0) {
-        wonLeg = true;
-      } else if (newScore < 2) {
-        newScore = awayScore; // Bust
-      }
+      if (newScore === 0) wonLeg = true;
+      else if (newScore < 2) newScore = awayScore;
 
       const updatedRounds = rounds.map((r, i) => i === rounds.length - 1 ? { ...r, away: score } : r);
       setRounds(updatedRounds);
@@ -139,23 +117,16 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         setInputVal('');
         return;
       }
-
       setAwayScore(newScore);
 
-      // Max 13 omgångar (39 pilar)
       if (updatedRounds.length >= 13) {
         setWarningMsg('Maximalt antal omgångar (13 omgångar / 39 pilar) nått!');
-        setTimeout(() => {
-          resetLeg();
-          setWarningMsg('');
-        }, 3000);
+        setTimeout(() => { resetLeg(); setWarningMsg(''); }, 3000);
         setInputVal('');
         return;
       }
-
       setTurn('home');
     }
-
     setInputVal('');
   };
 
@@ -167,136 +138,88 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-slate-950 text-white p-3 font-mono select-none border border-slate-800 shadow-2xl rounded-xl">
-      
-      {/* Header bar */}
-      <div className="flex justify-between items-center bg-slate-900 p-3 rounded-t-lg border-b border-slate-800 text-xs">
-        <button onClick={onBack} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded font-sans font-bold border border-slate-700">
-          ← Avbryt
-        </button>
-        <div className="text-yellow-400 font-extrabold tracking-wider">501 - BÄST AV 5 (FÖRST TILL 3)</div>
-        <div className="text-slate-400 font-bold">PILAR: <span className="text-emerald-400">{currentDarts}/39</span></div>
+    <div style={{ maxWidth: '650px', margin: '0 auto', backgroundColor: '#020617', color: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #1e293b', fontFamily: 'monospace' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a', padding: '10px', borderRadius: '8px', marginBottom: '10px' }}>
+        <button onClick={onBack} style={{ backgroundColor: '#334155', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'sans-serif' }}>← Avbryt</button>
+        <div style={{ color: '#eab308', fontWeight: 'bold', fontSize: '13px' }}>501 - BÄST AV 5 (FÖRST TILL 3)</div>
+        <div style={{ color: '#94a3b8', fontSize: '12px' }}>PILAR: <span style={{ color: '#10b981' }}>{currentDarts}/39</span></div>
       </div>
 
-      {warningMsg && (
-        <div className="bg-red-600 text-white font-bold text-center py-2 text-xs uppercase tracking-widest animate-pulse">
-          {warningMsg}
-        </div>
-      )}
+      {warningMsg && <div style={{ backgroundColor: '#dc2626', color: '#fff', textAlign: 'center', padding: '8px', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px' }}>{warningMsg}</div>}
 
-      {/* Modernised N01 Scoreboard */}
-      <div className="grid grid-cols-2 gap-2 my-2 text-center">
-        {/* Home Player */}
-        <div className={`p-3 rounded-lg border-2 transition-all ${turn === 'home' && !isMatchFinished ? 'border-emerald-500 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-slate-800 bg-slate-900/50'}`}>
-          <div className="text-emerald-400 font-bold truncate text-sm uppercase tracking-wider">{match.homePlayer || homeTeam}</div>
-          <div className="text-amber-300 text-6xl font-black my-1 tracking-tighter drop-shadow-[0_2px_8px_rgba(252,211,77,0.3)]">
-            {homeScore}
-          </div>
-          <div className="text-xs text-slate-400 flex justify-between px-2 pt-1 border-t border-slate-800/80">
-            <span>LEGS: <strong className="text-white text-base font-bold">{homeLegs}</strong></span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px', textAlign: 'center' }}>
+        <div style={{ padding: '10px', borderRadius: '8px', border: turn === 'home' && !isMatchFinished ? '2px solid #10b981' : '1px solid #1e293b', backgroundColor: turn === 'home' && !isMatchFinished ? '#064e3b22' : '#0f172a' }}>
+          <div style={{ color: '#34d399', fontWeight: 'bold', fontSize: '14px' }}>{match.homePlayer || homeTeam}</div>
+          <div style={{ color: '#fcd34d', fontSize: '48px', fontWeight: '900', margin: '4px 0' }}>{homeScore}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '12px', borderTop: '1px solid #1e293b', paddingTop: '4px' }}>
+            <span>LEGS: <strong style={{ color: '#fff' }}>{homeLegs}</strong></span>
             <span>OMG: {rounds.length}</span>
           </div>
         </div>
-
-        {/* Away Player */}
-        <div className={`p-3 rounded-lg border-2 transition-all ${turn === 'away' && !isMatchFinished ? 'border-emerald-500 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-slate-800 bg-slate-900/50'}`}>
-          <div className="text-emerald-400 font-bold truncate text-sm uppercase tracking-wider">{match.awayPlayer || awayTeam}</div>
-          <div className="text-amber-300 text-6xl font-black my-1 tracking-tighter drop-shadow-[0_2px_8px_rgba(252,211,77,0.3)]">
-            {awayScore}
-          </div>
-          <div className="text-xs text-slate-400 flex justify-between px-2 pt-1 border-t border-slate-800/80">
-            <span>LEGS: <strong className="text-white text-base font-bold">{awayLegs}</strong></span>
+        <div style={{ padding: '10px', borderRadius: '8px', border: turn === 'away' && !isMatchFinished ? '2px solid #10b981' : '1px solid #1e293b', backgroundColor: turn === 'away' && !isMatchFinished ? '#064e3b22' : '#0f172a' }}>
+          <div style={{ color: '#34d399', fontWeight: 'bold', fontSize: '14px' }}>{match.awayPlayer || awayTeam}</div>
+          <div style={{ color: '#fcd34d', fontSize: '48px', fontWeight: '900', margin: '4px 0' }}>{awayScore}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '12px', borderTop: '1px solid #1e293b', paddingTop: '4px' }}>
+            <span>LEGS: <strong style={{ color: '#fff' }}>{awayLegs}</strong></span>
             <span>OMG: {rounds.length}</span>
           </div>
         </div>
       </div>
 
-      {/* Main Control Panel (Keypad + N01 Snabbknappar + Historik) */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 my-2">
-        
-        {/* Keypad & Quick buttons (Col 8) */}
-        <div className="md:col-span-8 space-y-2">
-          
-          {/* Display */}
-          <div className="bg-slate-900 border-2 border-slate-800 p-2 text-right text-4xl font-mono text-yellow-400 h-14 flex items-center justify-end rounded-lg shadow-inner">
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
+        <div>
+          <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', padding: '10px', textAlign: 'right', fontSize: '32px', color: '#fcd34d', borderRadius: '6px', marginBottom: '8px', minHeight: '52px' }}>
             {inputVal || '0'}
           </div>
-
-          <div className="grid grid-cols-4 gap-1.5">
-            {/* Rad 1 */}
-            <button onClick={() => handleNumClick('7')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">7</button>
-            <button onClick={() => handleNumClick('8')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">8</button>
-            <button onClick={() => handleNumClick('9')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">9</button>
-            <button onClick={() => handleQuickScore(26)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm py-3 rounded-lg border border-slate-800">26</button>
-
-            {/* Rad 2 */}
-            <button onClick={() => handleNumClick('4')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">4</button>
-            <button onClick={() => handleNumClick('5')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">5</button>
-            <button onClick={() => handleNumClick('6')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">6</button>
-            <button onClick={() => handleQuickScore(41)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm py-3 rounded-lg border border-slate-800">41</button>
-
-            {/* Rad 3 */}
-            <button onClick={() => handleNumClick('1')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">1</button>
-            <button onClick={() => handleNumClick('2')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">2</button>
-            <button onClick={() => handleNumClick('3')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">3</button>
-            <button onClick={() => handleQuickScore(60)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm py-3 rounded-lg border border-slate-800">60</button>
-
-            {/* Rad 4 */}
-            <button onClick={handleClear} disabled={isMatchFinished} className="bg-red-900/80 hover:bg-red-800 text-white font-bold text-xl py-3 rounded-lg border border-red-700">C</button>
-            <button onClick={() => handleNumClick('0')} disabled={isMatchFinished} className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white font-black text-2xl py-3 rounded-lg border border-slate-700">0</button>
-            <button onClick={handleEnterScore} disabled={isMatchFinished} className="bg-blue-600 hover:bg-blue-500 active:bg-blue-400 text-white font-black text-xl py-3 rounded-lg border border-blue-400 shadow-md">OK</button>
-            <button onClick={() => handleQuickScore(100)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm py-3 rounded-lg border border-slate-800">100</button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+            {['7','8','9','26','4','5','6','41','1','2','3','60'].map((val, idx) => (
+              <button key={idx} onClick={() => ['26','41','60'].includes(val) ? handleQuickScore(parseInt(val)) : handleNumClick(val)} disabled={isMatchFinished} style={{ backgroundColor: ['26','41','60'].includes(val) ? '#0f172a' : '#1e293b', color: ['26','41','60'].includes(val) ? '#94a3b8' : '#fff', border: '1px solid #334155', borderRadius: '6px', padding: '12px 0', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {val}
+              </button>
+            ))}
+            <button onClick={handleClear} disabled={isMatchFinished} style={{ backgroundColor: '#7f1d1d', color: '#fff', border: '1px solid #991b1b', borderRadius: '6px', padding: '12px 0', fontWeight: 'bold', cursor: 'pointer' }}>C</button>
+            <button onClick={() => handleNumClick('0')} disabled={isMatchFinished} style={{ backgroundColor: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '6px', padding: '12px 0', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>0</button>
+            <button onClick={handleEnterScore} disabled={isMatchFinished} style={{ backgroundColor: '#2563eb', color: '#fff', border: '1px solid #3b82f6', borderRadius: '6px', padding: '12px 0', fontWeight: 'bold', cursor: 'pointer' }}>OK</button>
+            <button onClick={() => handleQuickScore(100)} disabled={isMatchFinished} style={{ backgroundColor: '#0f172a', color: '#94a3b8', border: '1px solid #334155', borderRadius: '6px', padding: '12px 0', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>100</button>
           </div>
-
-          {/* Snabbknappar rad 2 */}
-          <div className="grid grid-cols-4 gap-1.5 pt-1">
-            <button onClick={() => handleQuickScore(45)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs py-2 rounded-lg border border-slate-800">45</button>
-            <button onClick={() => handleQuickScore(85)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs py-2 rounded-lg border border-slate-800">85</button>
-            <button onClick={() => handleQuickScore(140)} disabled={isMatchFinished} className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs py-2 rounded-lg border border-slate-800">140</button>
-            <button onClick={() => handleQuickScore(180)} disabled={isMatchFinished} className="bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 font-extrabold text-xs py-2 rounded-lg border border-yellow-600/50">180</button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '4px' }}>
+            {[45, 85, 140, 180].map((sc) => (
+              <button key={sc} onClick={() => handleQuickScore(sc)} disabled={isMatchFinished} style={{ backgroundColor: sc === 180 ? '#713f12' : '#0f172a', color: sc === 180 ? '#fde047' : '#94a3b8', border: '1px solid #334155', borderRadius: '6px', padding: '8px 0', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {sc}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Turns History Table (Col 4) */}
-        <div className="md:col-span-4 bg-slate-900/80 border border-slate-800 rounded-lg p-2 h-[310px] overflow-y-auto text-xs font-mono">
-          <table className="w-full text-center">
+        <div style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '6px', padding: '6px', maxHeight: '290px', overflowY: 'auto', fontSize: '11px' }}>
+          <table style={{ width: '100%', textAlign: 'center', borderCollapse: 'collapse' }}>
             <thead>
-              <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px]">
-                <th className="py-1">Hem</th>
-                <th className="py-1 text-slate-600">#</th>
-                <th className="py-1">Borta</th>
+              <tr style={{ borderBottom: '1px solid #334155', color: '#64748b' }}>
+                <th>H</th>
+                <th>#</th>
+                <th>B</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody>
               {rounds.map((r, i) => (
-                <tr key={i} className="hover:bg-slate-800/40">
-                  <td className="py-1 text-amber-300 font-bold">{r.home !== null ? r.home : ''}</td>
-                  <td className="py-1 text-slate-600 text-[10px]">{r.round}</td>
-                  <td className="py-1 text-amber-300 font-bold">{r.away !== null ? r.away : ''}</td>
+                <tr key={i} style={{ borderBottom: '1px solid #1e293b' }}>
+                  <td style={{ color: '#fcd34d', padding: '4px 0' }}>{r.home}</td>
+                  <td style={{ color: '#475569' }}>{r.round}</td>
+                  <td style={{ color: '#fcd34d', padding: '4px 0' }}>{r.away}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
       </div>
 
-      {/* Skicka Resultat Knapp (Visas när en spelare vunnit 3 legs) */}
       {isMatchFinished ? (
-        <button 
-          onClick={() => {
-            onSave({ ...match, homeScore: homeLegs, awayScore: awayLegs, status: 'completed' }, performances);
-            onBack();
-          }} 
-          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 text-xl rounded-lg shadow-[0_0_20px_rgba(16,185,129,0.4)] border-2 border-emerald-400 mt-2 animate-bounce uppercase tracking-wider">
+        <button onClick={() => { onSave({ ...match, homeScore: homeLegs, awayScore: awayLegs, status: 'completed' }, performances); onBack(); }} style={{ width: '100%', backgroundColor: '#059669', color: '#fff', border: '2px solid #34d399', padding: '14px', borderRadius: '8px', fontSize: '18px', fontWeight: 'bold', marginTop: '10px', cursor: 'pointer' }}>
           ✓ SKICKA RESULTAT ({homeLegs} - {awayLegs})
         </button>
       ) : (
-        <div className="text-center text-[11px] text-slate-500 py-1 uppercase tracking-wider">
-          Först till 3 vunna legs låser upp skicka-knappen.
-        </div>
+        <div style={{ textAlign: 'center', fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Först till 3 vunna legs låser upp skicka-knappen.</div>
       )}
-
     </div>
   );
 }
@@ -305,16 +228,16 @@ function RefereeView({ matchData, activeSubMatchId, setActiveSubMatchId, onSaveM
   const activeMatch = matchData.subMatches.find(m => m.id === activeSubMatchId);
   if (!activeMatch) {
     return (
-      <div className="max-w-xl mx-auto space-y-3">
-        <h1 className="text-xl font-bold text-green-400 mb-4">Välj delmatch att döma</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div style={{ maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+        <h1 style={{ color: '#4ade80', fontSize: '18px', fontWeight: 'bold', marginBottom: '15px' }}>Välj delmatch att döma</h1>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           {matchData.subMatches.map((sm) => (
-            <button key={sm.id} onClick={() => setActiveSubMatchId(sm.id)} className="bg-slate-800 hover:bg-slate-700 p-4 rounded-lg text-left flex justify-between items-center border border-slate-700 shadow">
+            <button key={sm.id} onClick={() => setActiveSubMatchId(sm.id)} style={{ backgroundColor: '#1e293b', color: '#fff', border: '1px solid #334155', padding: '12px', borderRadius: '8px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
               <div>
-                <span className="font-bold text-yellow-500 mr-2">{sm.id}</span>
-                <span className="text-sm font-medium">{sm.homePlayer || 'Hemmalag'} vs {sm.awayPlayer || 'Bortalag'}</span>
+                <span style={{ color: '#eab308', fontWeight: 'bold', marginRight: '6px' }}>{sm.id}</span>
+                <span style={{ fontSize: '13px' }}>{sm.homePlayer || 'Hemmalag'} vs {sm.awayPlayer || 'Bortalag'}</span>
               </div>
-              <span className={`px-2 py-1 rounded text-xs font-bold ${sm.status === 'completed' ? 'bg-green-900 text-green-300' : 'bg-slate-700 text-slate-300'}`}>
+              <span style={{ backgroundColor: sm.status === 'completed' ? '#064e3b' : '#334155', color: sm.status === 'completed' ? '#6ee7b7' : '#cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
                 {sm.status === 'completed' ? `${sm.homeScore} - ${sm.awayScore}` : 'Välj'}
               </span>
             </button>
@@ -326,140 +249,95 @@ function RefereeView({ matchData, activeSubMatchId, setActiveSubMatchId, onSaveM
   return <N01Scorer match={activeMatch} homeTeam={matchData.homeTeam} awayTeam={matchData.awayTeam} onBack={() => setActiveSubMatchId(null)} onSave={onSaveMatch} />;
 }
 
-// --- 3. PUBLIK VY (EFTELIKNAR MATCHPROTOKOLLET) ---
 function PublicView({ matchData }) {
   const totalHomeScore = matchData.subMatches.reduce((acc, sm) => acc + (sm.homeScore > sm.awayScore ? 1 : 0), 0);
   const totalAwayScore = matchData.subMatches.reduce((acc, sm) => acc + (sm.awayScore > sm.homeScore ? 1 : 0), 0);
-
   const homePerf = matchData.performances.filter(p => p.team === 'home');
   const awayPerf = matchData.performances.filter(p => p.team === 'away');
 
   return (
-    <div className="max-w-4xl mx-auto bg-amber-50 text-slate-900 p-4 md:p-8 rounded-lg shadow-2xl border-2 border-amber-200 font-sans">
-      
-      {/* Protokoll Header */}
-      <div className="border-4 border-slate-900 p-4 mb-4 text-center bg-white">
-        <h1 className="text-3xl font-black tracking-widest text-slate-900">PUBSERIEN</h1>
-        <p className="text-xs font-bold tracking-wider text-slate-600 uppercase">Matchprotokoll Dart</p>
+    <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: '#fffbeb', color: '#0f172a', padding: '20px', borderRadius: '8px', border: '2px solid #fde68a', fontFamily: 'sans-serif' }}>
+      <div style={{ border: '3px solid #0f172a', padding: '10px', textAlign: 'center', backgroundColor: '#fff', marginBottom: '15px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: '900', letterSpacing: '2px', margin: 0 }}>PUBSERIEN</h1>
+        <p style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', margin: 0 }}>Matchprotokoll Dart</p>
       </div>
 
-      {/* Lag-rubriker & Totalresultat */}
-      <div className="grid grid-cols-12 gap-2 border-2 border-slate-900 bg-white mb-4 p-2 text-center items-center">
-        <div className="col-span-5 border-r-2 border-slate-900 pr-2">
-          <div className="text-xs font-bold text-slate-500 uppercase">Hemmalag</div>
-          <div className="text-xl md:text-2xl font-black truncate">{matchData.homeTeam || 'HEMMALAG'}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '5fr 2fr 5fr', border: '2px solid #0f172a', backgroundColor: '#fff', marginBottom: '15px', padding: '10px', textAlign: 'center', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>HEMMALAG</div>
+          <div style={{ fontSize: '18px', fontWeight: '900' }}>{matchData.homeTeam || 'HEMMALAG'}</div>
         </div>
-        <div className="col-span-2 px-1">
-          <div className="text-xs font-bold text-slate-500 uppercase">Resultat</div>
-          <div className="text-2xl md:text-3xl font-black text-red-600">{totalHomeScore} - {totalAwayScore}</div>
+        <div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>RESULTAT</div>
+          <div style={{ fontSize: '24px', fontWeight: '900', color: '#dc2626' }}>{totalHomeScore} - {totalAwayScore}</div>
         </div>
-        <div className="col-span-5 border-l-2 border-slate-900 pl-2">
-          <div className="text-xs font-bold text-slate-500 uppercase">Bortalag</div>
-          <div className="text-xl md:text-2xl font-black truncate">{matchData.awayTeam || 'BORTALAG'}</div>
+        <div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>BORTALAG</div>
+          <div style={{ fontSize: '18px', fontWeight: '900' }}>{matchData.awayTeam || 'BORTALAG'}</div>
         </div>
       </div>
 
-      {/* Delmatcher Tabell (S1 till AD) */}
-      <div className="border-2 border-slate-900 bg-white mb-4 overflow-x-auto">
-        <table className="w-full text-left border-collapse text-sm">
+      <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', marginBottom: '15px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '13px' }}>
           <thead>
-            <tr className="border-b-2 border-slate-900 bg-slate-100 text-xs font-bold text-slate-800 text-center uppercase">
-              <th className="p-2 border-r border-slate-400 w-1/3">{matchData.homeTeam || 'Hemmalag'}</th>
-              <th className="p-2 border-r border-slate-400 w-16">SET</th>
-              <th className="p-2 border-r border-slate-400 w-16">MATCH</th>
-              <th className="p-2 border-r border-slate-400 w-16">SET</th>
-              <th className="p-2 w-1/3">{matchData.awayTeam || 'Bortalag'}</th>
+            <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #0f172a', fontSize: '11px', fontWeight: 'bold' }}>
+              <th style={{ padding: '6px', textAlign: 'left', width: '35%' }}>{matchData.homeTeam || 'Hemmalag'}</th>
+              <th style={{ width: '10%' }}>SET</th>
+              <th style={{ width: '10%' }}>MATCH</th>
+              <th style={{ width: '10%' }}>SET</th>
+              <th style={{ padding: '6px', textAlign: 'left', width: '35%' }}>{matchData.awayTeam || 'Bortalag'}</th>
             </tr>
           </thead>
-          <tbody className="divide-y border-slate-300">
+          <tbody>
             {matchData.subMatches.map((sm) => (
-              <tr key={sm.id} className={`text-center font-semibold ${sm.id === 'AD' ? 'bg-amber-100/60 font-bold' : ''}`}>
-                <td className="p-2 border-r border-slate-300 text-left px-3">
-                  {sm.homePlayer || <span className="text-slate-300 italic">Ej angiven</span>}
-                </td>
-                <td className="p-2 border-r border-slate-300 font-mono text-base bg-slate-50">
-                  {sm.status === 'completed' ? sm.homeScore : ''}
-                </td>
-                <td className="p-2 border-r border-slate-900 font-black bg-slate-200 text-slate-800">
-                  {sm.id}
-                </td>
-                <td className="p-2 border-r border-slate-300 font-mono text-base bg-slate-50">
-                  {sm.status === 'completed' ? sm.awayScore : ''}
-                </td>
-                <td className="p-2 text-left px-3">
-                  {sm.awayPlayer || <span className="text-slate-300 italic">Ej angiven</span>}
-                </td>
+              <tr key={sm.id} style={{ borderBottom: '1px solid #cbd5e1', backgroundColor: sm.id === 'AD' ? '#fef3c7' : '#fff' }}>
+                <td style={{ padding: '6px', textAlign: 'left' }}>{sm.homePlayer || '-'}</td>
+                <td style={{ fontWeight: 'bold' }}>{sm.status === 'completed' ? sm.homeScore : ''}</td>
+                <td style={{ fontWeight: '900', backgroundColor: '#e2e8f0' }}>{sm.id}</td>
+                <td style={{ fontWeight: 'bold' }}>{sm.status === 'completed' ? sm.awayScore : ''}</td>
+                <td style={{ padding: '6px', textAlign: 'left' }}>{sm.awayPlayer || '-'}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="text-center text-xs font-bold border border-slate-900 bg-white p-1 mb-4">
+      <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'bold', border: '1px solid #0f172a', backgroundColor: '#fff', padding: '4px', marginBottom: '15px' }}>
         Avgörande Dubbel = Middling[cite: 1]
       </div>
 
-      {/* Prestationer & Underskrifter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="border-2 border-slate-900 bg-white p-3 flex flex-col justify-between">
-          <div>
-            <div className="text-xs font-bold text-slate-800 uppercase border-b border-slate-300 pb-1 mb-2">
-              PRESTATIONER: HEMMALAG[cite: 1]
-            </div>
-            <div className="min-h-[60px] text-xs space-y-1">
-              {homePerf.length > 0 ? (
-                homePerf.map((p, idx) => (
-                  <div key={idx} className="font-bold text-slate-800">🎯 {p.player}: {p.text}</div>
-                ))
-              ) : (
-                <span className="text-slate-400 italic">Inga registrerade</span>
-              )}
-            </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+        <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '10px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '6px' }}>PRESTATIONER: HEMMALAG[cite: 1]</div>
+          <div style={{ minHeight: '40px', fontSize: '11px' }}>
+            {homePerf.map((p, i) => <div key={i}>🎯 {p.player}: {p.text}</div>)}
           </div>
-          <div className="border-t border-slate-400 pt-2 mt-4">
-            <div className="text-[10px] font-bold text-slate-500 uppercase">UNDERSKRIFT: HEMMALAG[cite: 1]</div>
-            <div className="h-6 border-b border-dashed border-slate-400"></div>
-          </div>
+          <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: '4px', marginTop: '10px', fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>UNDERSKRIFT: HEMMALAG[cite: 1]</div>
         </div>
 
-        <div className="border-2 border-slate-900 bg-white p-3 flex flex-col justify-between">
-          <div>
-            <div className="text-xs font-bold text-slate-800 uppercase border-b border-slate-300 pb-1 mb-2">
-              PRESTATIONER: BORTALAG[cite: 1]
-            </div>
-            <div className="min-h-[60px] text-xs space-y-1">
-              {awayPerf.length > 0 ? (
-                awayPerf.map((p, idx) => (
-                  <div key={idx} className="font-bold text-slate-800">🎯 {p.player}: {p.text}</div>
-                ))
-              ) : (
-                <span className="text-slate-400 italic">Inga registrerade</span>
-              )}
-            </div>
+        <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '10px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '6px' }}>PRESTATIONER: BORTALAG[cite: 1]</div>
+          <div style={{ minHeight: '40px', fontSize: '11px' }}>
+            {awayPerf.map((p, i) => <div key={i}>🎯 {p.player}: {p.text}</div>)}
           </div>
-          <div className="border-t border-slate-400 pt-2 mt-4">
-            <div className="text-[10px] font-bold text-slate-500 uppercase">UNDERSKRIFT: BORTALAG[cite: 1]</div>
-            <div className="h-6 border-b border-dashed border-slate-400"></div>
-          </div>
+          <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: '4px', marginTop: '10px', fontSize: '9px', fontWeight: 'bold', color: '#64748b' }}>UNDERSKRIFT: BORTALAG[cite: 1]</div>
         </div>
       </div>
 
-      <div className="border-2 border-slate-900 bg-white p-3 text-xs space-y-2">
-        <div className="flex justify-between font-bold border-b border-slate-200 pb-1">
+      <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '8px', fontSize: '11px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '4px' }}>
           <span>DATUM: {new Date().toISOString().split('T')[0]}[cite: 1]</span>
           <span>MATCH NR: ______[cite: 1]</span>
         </div>
-        <div className="text-[11px] text-slate-600 leading-tight pt-1">
-          <p><strong>Herrar:</strong> Korta set 9-20 pilar / Höga utgångar 100 och uppåt / 180:or[cite: 1]</p>
-          <p><strong>Damer:</strong> Korta set 9-25 pilar / Höga utgångar 70 och uppåt / 180:or[cite: 1]</p>
+        <div style={{ color: '#475569', fontSize: '10px' }}>
+          <div><strong>Herrar:</strong> Korta set 9-20 pilar / Höga utgångar 100+ / 180:or[cite: 1]</div>
+          <div><strong>Damer:</strong> Korta set 9-25 pilar / Höga utgångar 70+ / 180:or[cite: 1]</div>
         </div>
       </div>
-
     </div>
   );
 }
 
-// --- HUVUDAPPLIKATION ---
 export default function Home() {
   const [currentView, setCurrentView] = useState('public');
   const [activeSubMatchId, setActiveSubMatchId] = useState(null);
@@ -479,18 +357,13 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans pb-12">
-      {/* DET HÄR LÄSS IN FÄRGERNA OCH LAYOUTEN DIREKT: */}
-      <Head>
-        <script src="https://cdn.tailwindcss.com"></script>
-      </Head>
-
-      <nav className="bg-slate-800 p-3 flex justify-center gap-4 border-b border-slate-700 sticky top-0 z-50 shadow-md">
-        <button onClick={() => setCurrentView('admin')} className={`px-4 py-2 rounded font-bold text-sm transition ${currentView === 'admin' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}>1. Admin</button>
-        <button onClick={() => setCurrentView('referee')} className={`px-4 py-2 rounded font-bold text-sm transition ${currentView === 'referee' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300'}`}>2. Domare</button>
-        <button onClick={() => setCurrentView('public')} className={`px-4 py-2 rounded font-bold text-sm transition ${currentView === 'public' ? 'bg-purple-600 text-white' : 'bg-slate-700 text-slate-300'}`}>3. Publik (Matchprotokoll)</button>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#fff', paddingBottom: '30px', fontFamily: 'sans-serif' }}>
+      <nav style={{ backgroundColor: '#1e293b', padding: '10px', display: 'flex', justifyContent: 'center', gap: '10px', borderBottom: '1px solid #334155', sticky: 'top' }}>
+        <button onClick={() => setCurrentView('admin')} style={{ backgroundColor: currentView === 'admin' ? '#2563eb' : '#334155', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>1. Admin</button>
+        <button onClick={() => setCurrentView('referee')} style={{ backgroundColor: currentView === 'referee' ? '#16a34a' : '#334155', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>2. Domare</button>
+        <button onClick={() => setCurrentView('public')} style={{ backgroundColor: currentView === 'public' ? '#9333ea' : '#334155', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>3. Publik (Matchprotokoll)</button>
       </nav>
-      <main className="p-4 max-w-5xl mx-auto mt-4">
+      <main style={{ padding: '15px' }}>
         {currentView === 'admin' && <AdminView matchData={matchData} setMatchData={setMatchData} />}
         {currentView === 'referee' && <RefereeView matchData={matchData} activeSubMatchId={activeSubMatchId} setActiveSubMatchId={setActiveSubMatchId} onSaveMatch={handleUpdateSubMatch} />}
         {currentView === 'public' && <PublicView matchData={matchData} />}
