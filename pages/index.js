@@ -15,7 +15,12 @@ const INITIAL_SUB_MATCHES = [
 ];
 
 const HOME_STARTS_MATCHES = ['S1', 'D1', 'S4', 'S6', 'S7'];
-const IMPOSSIBLE_CHECKOUTS = [179, 178, 177, 176, 175, 174, 173, 172, 171, 169, 168, 166, 165, 163, 162, 159];
+
+// Omöjliga kast med 3 pilar
+const IMPOSSIBLE_SCORES = [163, 166, 169, 172, 173, 175, 176, 178, 179];
+
+// Omöjliga utgångar under/på 170
+const IMPOSSIBLE_CHECKOUTS = [159, 162, 163, 165, 166, 168, 169];
 
 // --- 1. ADMIN VY ---
 function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAuthenticated }) {
@@ -140,11 +145,14 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [performances, setPerformances] = useState([]);
   const [confirmCheckout, setConfirmCheckout] = useState(null);
 
+  // REMAINING SCORE MODAL
+  const [confirmRemaining, setConfirmRemaining] = useState(null); // { targetScore, calculatedScored }
+
   // SCORING-TILLSTÅND
   const [scoringActive, setScoringActive] = useState(false);
   const [scoringHomeInput, setScoringHomeInput] = useState('');
   const [scoringAwayInput, setScoringAwayInput] = useState('');
-  const [scoringConfirm, setScoringConfirm] = useState(null); // { winner: 'home'|'away', winnerName, homeVal, awayVal }
+  const [scoringConfirm, setScoringConfirm] = useState(null);
 
   const logContainerRef = useRef(null);
 
@@ -188,12 +196,25 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     setInputVal('');
     setScoringActive(false);
     setScoringConfirm(null);
+    setConfirmRemaining(null);
   };
 
+  // VÄLDERING OCH BEHANDLING AV ENTER SCORE
   const handleEnterScore = () => {
     if (isMatchFinished || !turn) return;
     const score = parseInt(inputVal || '0', 10);
-    if (isNaN(score) || score > 180) return;
+
+    if (isNaN(score) || score > 180) {
+      alert('Ange en giltig poäng mellan 0 och 180.');
+      return;
+    }
+
+    // Skydd mot omöjliga poäng med 3 pilar
+    if (IMPOSSIBLE_SCORES.includes(score)) {
+      alert(`Det går inte att få ${score} poäng på 3 pilar!`);
+      setInputVal('');
+      return;
+    }
 
     const currentScore = turn === 'home' ? homeScore : awayScore;
     const remaining = currentScore - score;
@@ -208,6 +229,54 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     }
 
     processScore(score);
+  };
+
+  // ÖPPNA POPUP FÖR "ANGE SOM ÅTERSTÅENDE POÄNG"
+  const handleOpenRemainingModal = () => {
+    if (isMatchFinished || !turn || !inputVal) return;
+
+    const targetRemaining = parseInt(inputVal, 10);
+    const currentScore = turn === 'home' ? homeScore : awayScore;
+
+    if (isNaN(targetRemaining) || targetRemaining < 0 || targetRemaining >= currentScore) {
+      alert(`Återstående poäng måste vara mindre än nuvarande poäng (${currentScore}).`);
+      return;
+    }
+
+    const calculatedScored = currentScore - targetRemaining;
+
+    if (calculatedScored > 180) {
+      alert(`Detta innebär att spelaren kastat ${calculatedScored} poäng, vilket är över max 180.`);
+      return;
+    }
+
+    if (IMPOSSIBLE_SCORES.includes(calculatedScored)) {
+      alert(`Detta innebär att spelaren kastat ${calculatedScored} poäng, vilket är ett omöjligt kast.`);
+      return;
+    }
+
+    setConfirmRemaining({ targetRemaining, calculatedScored, player: activePlayerName });
+  };
+
+  // BEKRÄFTA ÅTERSTÅENDE POÄNG
+  const processRemainingScore = () => {
+    if (!confirmRemaining) return;
+    const { calculatedScored } = confirmRemaining;
+    setConfirmRemaining(null);
+
+    const currentScore = turn === 'home' ? homeScore : awayScore;
+    const remaining = currentScore - calculatedScored;
+
+    if (remaining === 0) {
+      if (IMPOSSIBLE_CHECKOUTS.includes(calculatedScored) || calculatedScored > 170) {
+        processScore(calculatedScored);
+        return;
+      }
+      setConfirmCheckout({ score: calculatedScored, player: activePlayerName, team: turn });
+      return;
+    }
+
+    processScore(calculatedScored);
   };
 
   const processScore = (score, confirmedCheckout = false) => {
@@ -271,12 +340,12 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     const hVal = parseInt(scoringHomeInput, 10);
     const aVal = parseInt(scoringAwayInput, 10);
 
-    if (isNaN(hVal) || hVal < 0 || hVal > 180) {
-      alert(`Ogiltig poäng för ${homeName}. Ange ett tal mellan 0 och 180.`);
+    if (isNaN(hVal) || hVal < 0 || hVal > 180 || IMPOSSIBLE_SCORES.includes(hVal)) {
+      alert(`Ogiltig poäng för ${homeName}.`);
       return;
     }
-    if (isNaN(aVal) || aVal < 0 || aVal > 180) {
-      alert(`Ogiltig poäng för ${awayName}. Ange ett tal mellan 0 och 180.`);
+    if (isNaN(aVal) || aVal < 0 || aVal > 180 || IMPOSSIBLE_SCORES.includes(aVal)) {
+      alert(`Ogiltig poäng för ${awayName}.`);
       return;
     }
     if (hVal === aVal) {
@@ -329,7 +398,10 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     if (newValStr === null) return;
 
     const newVal = parseInt(newValStr, 10);
-    if (isNaN(newVal) || newVal < 0 || newVal > 180) return;
+    if (isNaN(newVal) || newVal < 0 || newVal > 180 || IMPOSSIBLE_SCORES.includes(newVal)) {
+      alert('Ogiltig poäng.');
+      return;
+    }
 
     saveStateToHistory();
     setRounds(prev => prev.map((r, i) => i === index ? { ...r, [team]: newVal } : r));
@@ -370,6 +442,30 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
               </button>
               <button onClick={() => setConfirmCheckout(null)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '16px', borderRadius: '10px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
                 NEJ (Fel)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REMAINING SCORE MODAL */}
+      {confirmRemaining && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 105, padding: '20px' }}>
+          <div style={{ backgroundColor: '#0f172a', border: '2px solid #3b82f6', borderRadius: '16px', padding: '24px', textAlign: 'center', maxWidth: '400px', width: '100%' }}>
+            <div style={{ fontSize: '36px', marginBottom: '8px' }}>✏️</div>
+            <h3 style={{ color: '#fff', fontSize: '20px', margin: '0 0 10px 0' }}>Sätt kvarvarande poäng?</h3>
+            <p style={{ color: '#cbd5e1', fontSize: '16px', marginBottom: '15px' }}>
+              Sätt <strong style={{ color: '#60a5fa' }}>{confirmRemaining.player}s</strong> kvarvarande poäng till <strong style={{ color: '#fcd34d', fontSize: '20px' }}>{confirmRemaining.targetRemaining}</strong>?
+            </p>
+            <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '20px', backgroundColor: '#1e293b', padding: '8px', borderRadius: '6px' }}>
+              (Detta innebär en registrering av <strong>{confirmRemaining.calculatedScored}</strong> poäng)
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button onClick={processRemainingScore} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
+                JA (Registrera)
+              </button>
+              <button onClick={() => setConfirmRemaining(null)} style={{ backgroundColor: '#475569', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
+                NEJ (Avbryt)
               </button>
             </div>
           </div>
@@ -518,9 +614,34 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         </table>
       </div>
 
-      {/* Knappsats */}
-      <div style={{ backgroundColor: '#0f172a', border: '2px solid #334155', padding: '8px', textAlign: 'center', fontSize: '32px', color: '#fcd34d', borderRadius: '12px', marginBottom: '10px', height: '50px', fontFamily: 'monospace', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {inputVal || '0'}
+      {/* Knappsats & Kvarvarande Poäng-knapp */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ flex: 1, backgroundColor: '#0f172a', border: '2px solid #334155', padding: '8px', textAlign: 'center', fontSize: '32px', color: '#fcd34d', borderRadius: '12px', height: '50px', fontFamily: 'monospace', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+          {inputVal || '0'}
+        </div>
+        
+        {/* Lilla knappen med 3 prickar för Remaining Score */}
+        <button 
+          onClick={handleOpenRemainingModal}
+          disabled={isMatchFinished || !inputVal}
+          title="Ange som återstående poäng"
+          style={{ 
+            backgroundColor: inputVal ? '#1e293b' : '#0f172a', 
+            color: inputVal ? '#60a5fa' : '#475569', 
+            border: '2px solid #334155', 
+            borderRadius: '12px', 
+            width: '50px', 
+            height: '50px', 
+            fontSize: '22px', 
+            fontWeight: 'bold', 
+            cursor: inputVal ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+            justify: 'center'
+          }}
+        >
+          •••
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
