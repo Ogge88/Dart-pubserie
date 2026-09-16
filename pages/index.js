@@ -140,7 +140,12 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [performances, setPerformances] = useState([]);
   const [confirmCheckout, setConfirmCheckout] = useState(null);
 
-  // Ref för automatisk autoscroll i loggen
+  // SCORING-TILLSTÅND
+  const [scoringActive, setScoringActive] = useState(false);
+  const [scoringHomeInput, setScoringHomeInput] = useState('');
+  const [scoringAwayInput, setScoringAwayInput] = useState('');
+  const [scoringConfirm, setScoringConfirm] = useState(null); // { winner: 'home'|'away', winnerName, homeVal, awayVal }
+
   const logContainerRef = useRef(null);
 
   useEffect(() => {
@@ -181,6 +186,8 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     setPerformances(lastState.performances);
     setHistoryStack(prev => prev.slice(0, -1));
     setInputVal('');
+    setScoringActive(false);
+    setScoringConfirm(null);
   };
 
   const handleEnterScore = () => {
@@ -245,10 +252,63 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
       }
 
       setAwayScore(newScore);
+
+      // KOLL OM 39 PILAR HAR KASTATS OCH INGEN HAR GÅTT UT (13 omgångar × 3 pilar)
+      if (updatedRounds.length === 13) {
+        setScoringActive(true);
+        setInputVal('');
+        return;
+      }
+
       setTurn('home');
     }
 
     setInputVal('');
+  };
+
+  // SCORING-INMATNING
+  const handleScoringSubmit = () => {
+    const hVal = parseInt(scoringHomeInput, 10);
+    const aVal = parseInt(scoringAwayInput, 10);
+
+    if (isNaN(hVal) || hVal < 0 || hVal > 180) {
+      alert(`Ogiltig poäng för ${homeName}. Ange ett tal mellan 0 och 180.`);
+      return;
+    }
+    if (isNaN(aVal) || aVal < 0 || aVal > 180) {
+      alert(`Ogiltig poäng för ${awayName}. Ange ett tal mellan 0 och 180.`);
+      return;
+    }
+    if (hVal === aVal) {
+      alert('Det blev oavgjort! Scoring måste ge en vinnare (kasta igen vid oavgjort).');
+      return;
+    }
+
+    const winner = hVal > aVal ? 'home' : 'away';
+    const winnerName = winner === 'home' ? homeName : awayName;
+
+    setScoringConfirm({ winner, winnerName, homeVal: hVal, awayVal: aVal });
+  };
+
+  const confirmScoringWinner = () => {
+    if (!scoringConfirm) return;
+
+    if (scoringConfirm.winner === 'home') {
+      setHomeLegs(l => l + 1);
+    } else {
+      setAwayLegs(l => l + 1);
+    }
+
+    setScoringActive(false);
+    setScoringConfirm(null);
+    setScoringHomeInput('');
+    setScoringAwayInput('');
+
+    startNextLeg();
+  };
+
+  const cancelScoringConfirm = () => {
+    setScoringConfirm(null);
   };
 
   const startNextLeg = () => {
@@ -295,6 +355,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   return (
     <div style={{ maxWidth: '550px', margin: '0 auto', backgroundColor: '#020617', color: '#fff', padding: '12px', borderRadius: '16px', border: '1px solid #1e293b', fontFamily: 'sans-serif', userSelect: 'none' }}>
       
+      {/* CHECKOUT-BEKRÄFTELSE MODAL */}
       {confirmCheckout && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
           <div style={{ backgroundColor: '#0f172a', border: '2px solid #10b981', borderRadius: '16px', padding: '24px', textAlign: 'center', maxWidth: '400px', width: '100%' }}>
@@ -311,6 +372,82 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
                 NEJ (Fel)
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SCORING MODAL */}
+      {scoringActive && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: '20px' }}>
+          <div style={{ backgroundColor: '#0f172a', border: '2px solid #eab308', borderRadius: '16px', padding: '24px', textAlign: 'center', maxWidth: '420px', width: '100%' }}>
+            
+            {!scoringConfirm ? (
+              <>
+                <div style={{ fontSize: '36px', marginBottom: '8px' }}>⏱️</div>
+                <h2 style={{ color: '#eab308', fontSize: '24px', margin: '0 0 6px 0', fontWeight: '900' }}>39 PILAR UPPNÅD!</h2>
+                <p style={{ color: '#cbd5e1', fontSize: '14px', marginBottom: '20px' }}>
+                  Ingen spelare gick ut. Leget avgörs med <strong>Scoring (1 omgång, max 180 poäng)</strong>.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', textAlign: 'left' }}>
+                  <div>
+                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
+                      POÄNG {homeName.toUpperCase()}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="180"
+                      placeholder="0 - 180"
+                      value={scoringHomeInput}
+                      onChange={(e) => setScoringHomeInput(e.target.value)}
+                      style={{ width: '100%', padding: '12px', fontSize: '20px', fontWeight: 'bold', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#fcd34d', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
+                      POÄNG {awayName.toUpperCase()}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="180"
+                      placeholder="0 - 180"
+                      value={scoringAwayInput}
+                      onChange={(e) => setScoringAwayInput(e.target.value)}
+                      style={{ width: '100%', padding: '12px', fontSize: '20px', fontWeight: 'bold', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#fcd34d', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+
+                <button onClick={handleScoringSubmit} style={{ width: '100%', backgroundColor: '#eab308', color: '#0f172a', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Registrera Scoring
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '40px', marginBottom: '8px' }}>🏆</div>
+                <h3 style={{ color: '#fff', fontSize: '20px', margin: '0 0 10px 0' }}>Bekräfta vinnare av scoring</h3>
+                <p style={{ color: '#cbd5e1', fontSize: '18px', marginBottom: '20px' }}>
+                  Vann <strong style={{ color: '#34d399' }}>{scoringConfirm.winnerName}</strong> scoringen?
+                  <br />
+                  <span style={{ fontSize: '14px', color: '#94a3b8' }}>
+                    ({homeName}: {scoringConfirm.homeVal} vs {awayName}: {scoringConfirm.awayVal})
+                  </span>
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <button onClick={confirmScoringWinner} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '16px', borderRadius: '10px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    JA
+                  </button>
+                  <button onClick={cancelScoringConfirm} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '16px', borderRadius: '10px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    NEJ (Gör om)
+                  </button>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
       )}
@@ -343,7 +480,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         </div>
       </div>
 
-      {/* LOGG TABELL MED AUTOMATISK SKROLL NÅR DET FYLLS PÅ */}
+      {/* Logg med autoscroll */}
       <div 
         ref={logContainerRef} 
         style={{ 
@@ -381,7 +518,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         </table>
       </div>
 
-      {/* Inmatning & Knappsats */}
+      {/* Knappsats */}
       <div style={{ backgroundColor: '#0f172a', border: '2px solid #334155', padding: '8px', textAlign: 'center', fontSize: '32px', color: '#fcd34d', borderRadius: '12px', marginBottom: '10px', height: '50px', fontFamily: 'monospace', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {inputVal || '0'}
       </div>
