@@ -14,14 +14,26 @@ const INITIAL_SUB_MATCHES = [
   { id: 'AD', name: 'Avgörande Dubbel', type: 'double', homePlayer: '', awayPlayer: '', homeScore: 0, awayScore: 0, status: 'pending' }
 ];
 
-// Hemmalaget börjar i dessa matcher
 const HOME_STARTS_MATCHES = ['S1', 'D1', 'S4', 'S6', 'S7'];
 
 // Poäng som det ÄR OMÖJLIGT att gå ut på i dart
 const IMPOSSIBLE_CHECKOUTS = [179, 178, 177, 176, 175, 174, 173, 172, 171, 169, 168, 166, 165, 163, 162, 159];
 
-// --- 1. ADMIN VY ---
-function AdminView({ matchData, setMatchData }) {
+// --- 1. ADMIN VY (MED LÖSENORDSSKYDD) ---
+function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAuthenticated }) {
+  const [passwordInput, setPasswordInput] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (passwordInput === 'admin') {
+      setIsAdminAuthenticated(true);
+      setErrorMessage('');
+    } else {
+      setErrorMessage('Fel lösenord! Försök igen.');
+    }
+  };
+
   const handleTeamChange = (e) => setMatchData({ ...matchData, [e.target.name]: e.target.value });
   
   const handleSubMatchChange = (id, field, value) => {
@@ -38,9 +50,36 @@ function AdminView({ matchData, setMatchData }) {
     setMatchData({ ...matchData, subMatches: updated });
   };
 
+  if (!isAdminAuthenticated) {
+    return (
+      <div style={{ maxWidth: '400px', margin: '40px auto', backgroundColor: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155', textAlign: 'center' }}>
+        <div style={{ fontSize: '40px', marginBottom: '10px' }}>🔒</div>
+        <h2 style={{ color: '#fff', fontSize: '20px', marginBottom: '15px' }}>Admin Inloggning</h2>
+        <form onSubmit={handleLogin}>
+          <input
+            type="password"
+            placeholder="Ange lösenord"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#fff', fontSize: '16px', marginBottom: '12px', boxSizing: 'border-box' }}
+          />
+          {errorMessage && <div style={{ color: '#f43f5e', fontSize: '14px', marginBottom: '12px' }}>{errorMessage}</div>}
+          <button type="submit" style={{ width: '100%', backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+            Lås upp
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: '750px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-      <h1 style={{ color: '#60a5fa', fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>Admin - Lag & Resultatredigering</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <h1 style={{ color: '#60a5fa', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Admin - Lag & Resultatredigering</h1>
+        <button onClick={() => setIsAdminAuthenticated(false)} style={{ backgroundColor: '#475569', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>
+          🔒 Lås Admin
+        </button>
+      </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', backgroundColor: '#1e293b', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
         <div>
@@ -83,7 +122,7 @@ function AdminView({ matchData, setMatchData }) {
   );
 }
 
-// --- 2. DOMAR VY (OPTIMERAD FÖR MOBIL OCH SURFPLATTA) ---
+// --- 2. DOMAR VY (FÖRSLAG 2: STOR POÄNG, STOR LOGG, OPTIMERAD MOBIL) ---
 function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [homeScore, setHomeScore] = useState(501);
   const [awayScore, setAwayScore] = useState(501);
@@ -107,9 +146,6 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const awayName = match.awayPlayer || awayTeam;
 
   const isMatchFinished = homeLegs === 3 || awayLegs === 3;
-  const currentRound = rounds.length + (turn === 'home' ? 1 : 0);
-  const currentDarts = (currentRound - 1) * 3 + (turn === 'away' ? 3 : 0);
-
   const activePlayerName = turn === 'home' ? homeName : awayName;
 
   const handleNumClick = (num) => {
@@ -148,14 +184,11 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     const currentScore = turn === 'home' ? homeScore : awayScore;
     const remaining = currentScore - score;
 
-    // Kontrollera om det är en giltig utgång
     if (remaining === 0) {
-      // Om det är en omöjlig utgång eller om man försöker gå ut på högre än 170
       if (IMPOSSIBLE_CHECKOUTS.includes(score) || score > 170) {
-        processScore(score); // Blir automatisk BUST
+        processScore(score);
         return;
       }
-
       setConfirmCheckout({ score, player: activePlayerName, team: turn });
       return;
     }
@@ -170,14 +203,10 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     let isBust = false;
     let displayScore = score;
 
-    // Villkor för Bust (Tjock):
-    // 1. Man har under 0 poäng kvar
-    // 2. Man har exakt 1 poäng kvar (omöjligt att gå ut med dubbel)
-    // 3. Man når 0 poäng på en omöjlig utgångs-siffra (t.ex. 169, 168 eller > 170)
     if (newScore < 0 || newScore === 1 || (newScore === 0 && (IMPOSSIBLE_CHECKOUTS.includes(score) || score > 170))) {
       isBust = true;
       newScore = currentScore;
-      displayScore = 'BUST (0)';
+      displayScore = 'BUST';
     }
 
     if (score === 180 && !isBust) {
@@ -185,12 +214,12 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     }
 
     if (turn === 'home') {
-      const updatedRounds = [...rounds, { round: rounds.length + 1, home: displayScore, away: null }];
+      const updatedRounds = [...rounds, { round: (rounds.length + 1) * 3, home: displayScore, away: null }];
       setRounds(updatedRounds);
 
       if (confirmedCheckout) {
         setHomeLegs(l => l + 1);
-        startNextLeg('home');
+        startNextLeg();
         setInputVal('');
         return;
       }
@@ -203,7 +232,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
 
       if (confirmedCheckout) {
         setAwayLegs(l => l + 1);
-        startNextLeg('away');
+        startNextLeg();
         setInputVal('');
         return;
       }
@@ -229,7 +258,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     const currentVal = team === 'home' ? targetRound.home : targetRound.away;
     if (currentVal === null) return;
 
-    const newValStr = prompt(`Ändra poäng för omgång ${index + 1}:`, currentVal);
+    const newValStr = prompt(`Ändra poäng för omgång ${index + 1}:`, currentVal === 'BUST' ? '0' : currentVal);
     if (newValStr === null) return;
 
     const newVal = parseInt(newValStr, 10);
@@ -239,13 +268,11 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     setRounds(prev => prev.map((r, i) => i === index ? { ...r, [team]: newVal } : r));
   };
 
-  // Välj startare manuellt i AD
   if (!turn && match.id === 'AD') {
     return (
       <div style={{ maxWidth: '500px', margin: '20px auto', backgroundColor: '#020617', padding: '25px', borderRadius: '16px', textAlign: 'center', border: '2px solid #eab308' }}>
         <h2 style={{ color: '#eab308', fontSize: '22px', marginBottom: '10px' }}>AVGÖRANDE DUBBEL (AD)</h2>
         <p style={{ color: '#94a3b8', fontSize: '15px', marginBottom: '20px' }}>Vem vann slantkastningen / omkastet och ska börja?</p>
-        
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <button onClick={() => { setLegStarter('home'); setTurn('home'); }} style={{ backgroundColor: '#1e293b', color: '#60a5fa', border: '2px solid #3b82f6', padding: '20px', borderRadius: '12px', fontWeight: 'bold', fontSize: '18px', cursor: 'pointer' }}>
             {homeName}
@@ -259,7 +286,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   }
 
   return (
-    <div style={{ maxWidth: '650px', margin: '0 auto', backgroundColor: '#020617', color: '#fff', padding: '12px', borderRadius: '16px', border: '1px solid #1e293b', fontFamily: 'sans-serif', userSelect: 'none' }}>
+    <div style={{ maxWidth: '550px', margin: '0 auto', backgroundColor: '#020617', color: '#fff', padding: '12px', borderRadius: '16px', border: '1px solid #1e293b', fontFamily: 'sans-serif', userSelect: 'none' }}>
       
       {/* Modal / Popup vid utgång */}
       {confirmCheckout && (
@@ -282,89 +309,81 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         </div>
       )}
 
-      {/* Header & Pilar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a', padding: '10px 14px', borderRadius: '10px', marginBottom: '12px' }}>
-        <button onClick={onBack} style={{ backgroundColor: '#334155', color: '#fff', border: 'none', padding: '10px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>← Tillbaka</button>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ color: '#eab308', fontWeight: 'bold', fontSize: '14px' }}>MATCH {match.id} (501)</div>
-          <div style={{ color: '#94a3b8', fontSize: '13px' }}>KASTADE PILAR: <strong style={{ color: '#10b981', fontSize: '15px' }}>{currentDarts} st</strong></div>
-        </div>
-        <button onClick={handleUndo} disabled={historyStack.length === 0} style={{ backgroundColor: historyStack.length > 0 ? '#d97706' : '#1e293b', color: '#fff', border: 'none', padding: '10px 14px', borderRadius: '8px', cursor: historyStack.length > 0 ? 'pointer' : 'default', fontWeight: 'bold', fontSize: '13px', opacity: historyStack.length > 0 ? 1 : 0.4 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a', padding: '8px 12px', borderRadius: '10px', marginBottom: '10px' }}>
+        <button onClick={onBack} style={{ backgroundColor: '#334155', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>← Tillbaka</button>
+        <div style={{ color: '#eab308', fontWeight: 'bold', fontSize: '14px' }}>MATCH {match.id} ({homeLegs} - {awayLegs})</div>
+        <button onClick={handleUndo} disabled={historyStack.length === 0} style={{ backgroundColor: historyStack.length > 0 ? '#d97706' : '#1e293b', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: historyStack.length > 0 ? 'pointer' : 'default', fontWeight: 'bold', fontSize: '12px', opacity: historyStack.length > 0 ? 1 : 0.4 }}>
           ↩ Ångra
         </button>
       </div>
 
-      {/* Större Poängtavla (Tydliga markeringar) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px', textAlign: 'center' }}>
-        <div style={{ padding: '14px 8px', borderRadius: '12px', border: turn === 'home' && !isMatchFinished ? '4px solid #10b981' : '2px solid #1e293b', backgroundColor: turn === 'home' && !isMatchFinished ? '#064e3b44' : '#0f172a' }}>
-          <div style={{ color: turn === 'home' ? '#34d399' : '#94a3b8', fontWeight: 'bold', fontSize: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      {/* GIGANTISKA POÄNGSIFFROR (FÖRSLAG 2 STIL) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+        <div style={{ backgroundColor: turn === 'home' && !isMatchFinished ? '#064e3b' : '#0f172a', border: turn === 'home' && !isMatchFinished ? '4px solid #10b981' : '2px solid #1e293b', borderRadius: '14px', padding: '12px 6px', textAlign: 'center' }}>
+          <div style={{ color: turn === 'home' ? '#34d399' : '#94a3b8', fontSize: '15px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {homeName} {legStarter === 'home' && '🟢'}
           </div>
-          <div style={{ color: turn === 'home' ? '#fcd34d' : '#64748b', fontSize: '56px', fontWeight: '900', margin: '2px 0', fontFamily: 'monospace', lineHeight: 1 }}>{homeScore}</div>
-          <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold', borderTop: '1px solid #1e293b', paddingTop: '6px', marginTop: '4px' }}>
-            LEGS: {homeLegs}
-          </div>
+          <div style={{ fontSize: '64px', fontWeight: '900', color: '#fff', fontFamily: 'monospace', lineHeight: 1, margin: '6px 0' }}>{homeScore}</div>
+          <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>LEGS: {homeLegs}</div>
         </div>
 
-        <div style={{ padding: '14px 8px', borderRadius: '12px', border: turn === 'away' && !isMatchFinished ? '4px solid #10b981' : '2px solid #1e293b', backgroundColor: turn === 'away' && !isMatchFinished ? '#064e3b44' : '#0f172a' }}>
-          <div style={{ color: turn === 'away' ? '#34d399' : '#94a3b8', fontWeight: 'bold', fontSize: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ backgroundColor: turn === 'away' && !isMatchFinished ? '#064e3b' : '#0f172a', border: turn === 'away' && !isMatchFinished ? '4px solid #10b981' : '2px solid #1e293b', borderRadius: '14px', padding: '12px 6px', textAlign: 'center' }}>
+          <div style={{ color: turn === 'away' ? '#34d399' : '#94a3b8', fontSize: '15px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {awayName} {legStarter === 'away' && '🟢'}
           </div>
-          <div style={{ color: turn === 'away' ? '#fcd34d' : '#64748b', fontSize: '56px', fontWeight: '900', margin: '2px 0', fontFamily: 'monospace', lineHeight: 1 }}>{awayScore}</div>
-          <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold', borderTop: '1px solid #1e293b', paddingTop: '6px', marginTop: '4px' }}>
-            LEGS: {awayLegs}
-          </div>
+          <div style={{ fontSize: '64px', fontWeight: '900', color: '#fff', fontFamily: 'monospace', lineHeight: 1, margin: '6px 0' }}>{awayScore}</div>
+          <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>LEGS: {awayLegs}</div>
         </div>
       </div>
 
-      {/* Touchanpassad Sifferknappsats & Logg */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '10px' }}>
-        <div>
-          <div style={{ backgroundColor: '#0f172a', border: '2px solid #334155', padding: '10px 14px', textAlign: 'right', fontSize: '36px', color: '#fcd34d', borderRadius: '12px', marginBottom: '10px', minHeight: '60px', fontFamily: 'monospace', fontWeight: 'bold' }}>
-            {inputVal || '0'}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-            {['7','8','9','4','5','6','1','2','3'].map((num) => (
-              <button key={num} onClick={() => handleNumClick(num)} disabled={isMatchFinished} style={{ backgroundColor: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '12px', padding: '18px 0', fontSize: '26px', fontWeight: 'bold', cursor: 'pointer', touchAction: 'manipulation' }}>
-                {num}
-              </button>
-            ))}
-            <button onClick={handleClear} disabled={isMatchFinished} style={{ backgroundColor: '#7f1d1d', color: '#fff', border: '1px solid #991b1b', borderRadius: '12px', padding: '18px 0', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>C</button>
-            <button onClick={() => handleNumClick('0')} disabled={isMatchFinished} style={{ backgroundColor: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '12px', padding: '18px 0', fontSize: '26px', fontWeight: 'bold', cursor: 'pointer' }}>0</button>
-            <button onClick={handleEnterScore} disabled={isMatchFinished} style={{ backgroundColor: '#2563eb', color: '#fff', border: '1px solid #3b82f6', borderRadius: '12px', padding: '18px 0', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>OK</button>
-          </div>
-        </div>
-
-        {/* Historik / Logg */}
-        <div style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '8px', maxHeight: '330px', overflowY: 'auto', fontSize: '13px' }}>
-          <div style={{ color: '#64748b', fontSize: '10px', textAlign: 'center', marginBottom: '6px', fontWeight: 'bold' }}>LOGG (ÄNDRA)</div>
-          <table style={{ width: '100%', textAlign: 'center', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8', fontSize: '11px' }}>
-                <th>H</th>
-                <th>#</th>
-                <th>B</th>
+      {/* LOGG TABELL MED MYCKET STÖRRE TEXT */}
+      <div style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '10px', height: '160px', overflowY: 'auto', marginBottom: '10px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid #334155', color: '#94a3b8', fontSize: '12px' }}>
+              <th style={{ width: '40%', paddingBottom: '4px' }}>{homeName}</th>
+              <th style={{ width: '20%', paddingBottom: '4px' }}>PILAR</th>
+              <th style={{ width: '40%', paddingBottom: '4px' }}>{awayName}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rounds.map((r, i) => (
+              <tr key={i} style={{ borderBottom: '1px solid #1e293b', fontSize: '22px', fontWeight: 'bold' }}>
+                <td onClick={() => handleEditRound(i, 'home')} style={{ color: r.home === 'BUST' ? '#f43f5e' : '#fcd34d', padding: '6px 0', cursor: 'pointer' }}>
+                  {r.home !== null ? r.home : ''}
+                </td>
+                <td style={{ color: '#475569', fontSize: '15px' }}>{r.round}</td>
+                <td onClick={() => handleEditRound(i, 'away')} style={{ color: r.away === 'BUST' ? '#f43f5e' : '#fcd34d', padding: '6px 0', cursor: 'pointer' }}>
+                  {r.away !== null ? r.away : ''}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rounds.map((r, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #1e293b' }}>
-                  <td onClick={() => handleEditRound(i, 'home')} style={{ color: r.home === 'BUST (0)' ? '#f43f5e' : '#fcd34d', padding: '8px 0', cursor: 'pointer', textDecoration: 'underline', fontWeight: r.home === 'BUST (0)' ? 'bold' : 'normal' }}>{r.home !== null ? r.home : '-'}</td>
-                  <td style={{ color: '#475569', fontSize: '11px' }}>{r.round}</td>
-                  <td onClick={() => handleEditRound(i, 'away')} style={{ color: r.away === 'BUST (0)' ? '#f43f5e' : '#fcd34d', padding: '8px 0', cursor: 'pointer', textDecoration: 'underline', fontWeight: r.away === 'BUST (0)' ? 'bold' : 'normal' }}>{r.away !== null ? r.away : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {isMatchFinished ? (
+      {/* INMATNINGSRUTA & KNAPPSATS */}
+      <div style={{ backgroundColor: '#0f172a', border: '2px solid #334155', padding: '8px', textAlign: 'center', fontSize: '32px', color: '#fcd34d', borderRadius: '12px', marginBottom: '10px', height: '50px', fontFamily: 'monospace', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {inputVal || '0'}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        {['7','8','9','4','5','6','1','2','3'].map((num) => (
+          <button key={num} onClick={() => handleNumClick(num)} disabled={isMatchFinished} style={{ backgroundColor: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '12px', padding: '16px 0', fontSize: '26px', fontWeight: 'bold', cursor: 'pointer', touchAction: 'manipulation' }}>
+            {num}
+          </button>
+        ))}
+        <button onClick={handleClear} disabled={isMatchFinished} style={{ backgroundColor: '#7f1d1d', color: '#fff', border: '1px solid #991b1b', borderRadius: '12px', padding: '16px 0', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>C</button>
+        <button onClick={() => handleNumClick('0')} disabled={isMatchFinished} style={{ backgroundColor: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '12px', padding: '16px 0', fontSize: '26px', fontWeight: 'bold', cursor: 'pointer' }}>0</button>
+        <button onClick={handleEnterScore} disabled={isMatchFinished} style={{ backgroundColor: '#2563eb', color: '#fff', border: '1px solid #3b82f6', borderRadius: '12px', padding: '16px 0', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>OK</button>
+      </div>
+
+      {isMatchFinished && (
         <button onClick={() => { onSave({ ...match, homeScore: homeLegs, awayScore: awayLegs, status: 'completed' }, performances); onBack(); }} style={{ width: '100%', backgroundColor: '#059669', color: '#fff', border: '2px solid #34d399', padding: '16px', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', marginTop: '12px', cursor: 'pointer' }}>
           ✓ SKICKA RESULTAT ({homeLegs} - {awayLegs})
         </button>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -523,6 +542,7 @@ function PublicView({ matchData }) {
 export default function Home() {
   const [currentView, setCurrentView] = useState('public');
   const [activeSubMatchId, setActiveSubMatchId] = useState(null);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [matchData, setMatchData] = useState({
     homeTeam: 'HEMMALAG',
     awayTeam: 'BORTALAG',
@@ -546,7 +566,7 @@ export default function Home() {
         <button onClick={() => setCurrentView('public')} style={{ backgroundColor: currentView === 'public' ? '#9333ea' : '#334155', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>3. Publik (Matchprotokoll)</button>
       </nav>
       <main style={{ padding: '12px' }}>
-        {currentView === 'admin' && <AdminView matchData={matchData} setMatchData={setMatchData} />}
+        {currentView === 'admin' && <AdminView matchData={matchData} setMatchData={setMatchData} isAdminAuthenticated={isAdminAuthenticated} setIsAdminAuthenticated={setIsAdminAuthenticated} />}
         {currentView === 'referee' && <RefereeView matchData={matchData} activeSubMatchId={activeSubMatchId} setActiveSubMatchId={setActiveSubMatchId} onSaveMatch={handleUpdateSubMatch} />}
         {currentView === 'public' && <PublicView matchData={matchData} />}
       </main>
