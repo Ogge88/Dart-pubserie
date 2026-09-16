@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const INITIAL_SUB_MATCHES = [
   { id: 'S1', name: 'Singel 1', type: 'single', homePlayer: '', awayPlayer: '', homeScore: 0, awayScore: 0, status: 'pending' },
@@ -15,11 +15,9 @@ const INITIAL_SUB_MATCHES = [
 ];
 
 const HOME_STARTS_MATCHES = ['S1', 'D1', 'S4', 'S6', 'S7'];
-
-// Poäng som det ÄR OMÖJLIGT att gå ut på i dart
 const IMPOSSIBLE_CHECKOUTS = [179, 178, 177, 176, 175, 174, 173, 172, 171, 169, 168, 166, 165, 163, 162, 159];
 
-// --- 1. ADMIN VY (MED LÖSENORDSSKYDD) ---
+// --- 1. ADMIN VY ---
 function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAuthenticated }) {
   const [passwordInput, setPasswordInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -122,7 +120,7 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
   );
 }
 
-// --- 2. DOMAR VY (FÖRSLAG 2: STOR POÄNG, STOR LOGG, OPTIMERAD MOBIL) ---
+// --- 2. DOMAR VY ---
 function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [homeScore, setHomeScore] = useState(501);
   const [awayScore, setAwayScore] = useState(501);
@@ -141,6 +139,15 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [rounds, setRounds] = useState([]);
   const [performances, setPerformances] = useState([]);
   const [confirmCheckout, setConfirmCheckout] = useState(null);
+
+  // Ref för automatisk autoscroll i loggen
+  const logContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [rounds, turn]);
 
   const homeName = match.homePlayer || homeTeam;
   const awayName = match.awayPlayer || awayTeam;
@@ -288,7 +295,6 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   return (
     <div style={{ maxWidth: '550px', margin: '0 auto', backgroundColor: '#020617', color: '#fff', padding: '12px', borderRadius: '16px', border: '1px solid #1e293b', fontFamily: 'sans-serif', userSelect: 'none' }}>
       
-      {/* Modal / Popup vid utgång */}
       {confirmCheckout && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
           <div style={{ backgroundColor: '#0f172a', border: '2px solid #10b981', borderRadius: '16px', padding: '24px', textAlign: 'center', maxWidth: '400px', width: '100%' }}>
@@ -318,7 +324,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         </button>
       </div>
 
-      {/* GIGANTISKA POÄNGSIFFROR (FÖRSLAG 2 STIL) */}
+      {/* Stora poängsiffror */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
         <div style={{ backgroundColor: turn === 'home' && !isMatchFinished ? '#064e3b' : '#0f172a', border: turn === 'home' && !isMatchFinished ? '4px solid #10b981' : '2px solid #1e293b', borderRadius: '14px', padding: '12px 6px', textAlign: 'center' }}>
           <div style={{ color: turn === 'home' ? '#34d399' : '#94a3b8', fontSize: '15px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -337,8 +343,20 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         </div>
       </div>
 
-      {/* LOGG TABELL MED MYCKET STÖRRE TEXT */}
-      <div style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', padding: '10px', height: '160px', overflowY: 'auto', marginBottom: '10px' }}>
+      {/* LOGG TABELL MED AUTOMATISK SKROLL NÅR DET FYLLS PÅ */}
+      <div 
+        ref={logContainerRef} 
+        style={{ 
+          backgroundColor: '#0f172a', 
+          border: '1px solid #1e293b', 
+          borderRadius: '12px', 
+          padding: '10px', 
+          height: '160px', 
+          overflowY: 'auto', 
+          marginBottom: '10px',
+          scrollBehavior: 'smooth'
+        }}
+      >
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #334155', color: '#94a3b8', fontSize: '12px' }}>
@@ -363,7 +381,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         </table>
       </div>
 
-      {/* INMATNINGSRUTA & KNAPPSATS */}
+      {/* Inmatning & Knappsats */}
       <div style={{ backgroundColor: '#0f172a', border: '2px solid #334155', padding: '8px', textAlign: 'center', fontSize: '32px', color: '#fcd34d', borderRadius: '12px', marginBottom: '10px', height: '50px', fontFamily: 'monospace', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {inputVal || '0'}
       </div>
