@@ -146,7 +146,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [confirmCheckout, setConfirmCheckout] = useState(null);
 
   // REMAINING SCORE MODAL
-  const [confirmRemaining, setConfirmRemaining] = useState(null); // { targetScore, calculatedScored }
+  const [confirmRemaining, setConfirmRemaining] = useState(null);
 
   // SCORING-TILLSTÅND
   const [scoringActive, setScoringActive] = useState(false);
@@ -167,6 +167,64 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
 
   const isMatchFinished = homeLegs === 3 || awayLegs === 3;
   const activePlayerName = turn === 'home' ? homeName : awayName;
+
+  const recalculateRoundsAndScores = (currentRounds) => {
+    let currentHome = 501;
+    let currentAway = 501;
+
+    const updatedRounds = currentRounds.map((r) => {
+      let newHomeEntry = r.home;
+      let newAwayEntry = r.away;
+
+      if (r.home) {
+        const score = r.home.rawScore;
+        let rem = currentHome - score;
+        let isBust = rem < 0 || rem === 1 || (rem === 0 && (IMPOSSIBLE_CHECKOUTS.includes(score) || score > 170));
+        
+        if (isBust) {
+          rem = currentHome;
+        } else {
+          currentHome = rem;
+        }
+
+        newHomeEntry = {
+          rawScore: score,
+          score: isBust ? 'BUST' : score,
+          remaining: rem
+        };
+      }
+
+      if (r.away) {
+        const score = r.away.rawScore;
+        let rem = currentAway - score;
+        let isBust = rem < 0 || rem === 1 || (rem === 0 && (IMPOSSIBLE_CHECKOUTS.includes(score) || score > 170));
+        
+        if (isBust) {
+          rem = currentAway;
+        } else {
+          currentAway = rem;
+        }
+
+        newAwayEntry = {
+          rawScore: score,
+          score: isBust ? 'BUST' : score,
+          remaining: rem
+        };
+      }
+
+      return {
+        ...r,
+        home: newHomeEntry,
+        away: newAwayEntry
+      };
+    });
+
+    return {
+      updatedRounds,
+      newHomeScore: currentHome,
+      newAwayScore: currentAway
+    };
+  };
 
   const handleNumClick = (num) => {
     if (isMatchFinished || !turn) return;
@@ -192,14 +250,12 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     setLegStarter(lastState.legStarter);
     setRounds(lastState.rounds);
     setPerformances(lastState.performances);
-    setHistoryStack(prev => prev.slice(0, -1));
     setInputVal('');
     setScoringActive(false);
     setScoringConfirm(null);
     setConfirmRemaining(null);
   };
 
-  // VÄLDERING OCH BEHANDLING AV ENTER SCORE
   const handleEnterScore = () => {
     if (isMatchFinished || !turn) return;
     const score = parseInt(inputVal || '0', 10);
@@ -209,7 +265,6 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
       return;
     }
 
-    // Skydd mot omöjliga poäng med 3 pilar
     if (IMPOSSIBLE_SCORES.includes(score)) {
       alert(`Det går inte att få ${score} poäng på 3 pilar!`);
       setInputVal('');
@@ -231,7 +286,6 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     processScore(score);
   };
 
-  // ÖPPNA POPUP FÖR "ANGE SOM ÅTERSTÅENDE POÄNG"
   const handleOpenRemainingModal = () => {
     if (isMatchFinished || !turn || !inputVal) return;
 
@@ -258,7 +312,6 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     setConfirmRemaining({ targetRemaining, calculatedScored, player: activePlayerName });
   };
 
-  // BEKRÄFTA ÅTERSTÅENDE POÄNG
   const processRemainingScore = () => {
     if (!confirmRemaining) return;
     const { calculatedScored } = confirmRemaining;
@@ -284,23 +337,31 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     const currentScore = turn === 'home' ? homeScore : awayScore;
     let newScore = currentScore - score;
     let isBust = false;
-    let displayScore = score;
 
     if (newScore < 0 || newScore === 1 || (newScore === 0 && (IMPOSSIBLE_CHECKOUTS.includes(score) || score > 170))) {
       isBust = true;
       newScore = currentScore;
-      displayScore = 'BUST';
     }
 
+    // Prestation: 180
     if (score === 180 && !isBust) {
       setPerformances(prev => [...prev, { team: turn, player: activePlayerName, text: '180' }]);
     }
 
+    const entryData = {
+      rawScore: score,
+      score: isBust ? 'BUST' : score,
+      remaining: newScore
+    };
+
     if (turn === 'home') {
-      const updatedRounds = [...rounds, { round: (rounds.length + 1) * 3, home: displayScore, away: null }];
+      const updatedRounds = [...rounds, { round: (rounds.length + 1) * 3, home: entryData, away: null }];
       setRounds(updatedRounds);
 
       if (confirmedCheckout) {
+        // Kontrollera checkout-prestationer för hemmaspelaren
+        checkAndAddCheckoutPerformances('home', activePlayerName, score, updatedRounds.length);
+
         setHomeLegs(l => l + 1);
         startNextLeg();
         setInputVal('');
@@ -310,10 +371,13 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
       setHomeScore(newScore);
       setTurn('away');
     } else {
-      const updatedRounds = rounds.map((r, i) => i === rounds.length - 1 ? { ...r, away: displayScore } : r);
+      const updatedRounds = rounds.map((r, i) => i === rounds.length - 1 ? { ...r, away: entryData } : r);
       setRounds(updatedRounds);
 
       if (confirmedCheckout) {
+        // Kontrollera checkout-prestationer för bortaspelaren
+        checkAndAddCheckoutPerformances('away', activePlayerName, score, updatedRounds.length);
+
         setAwayLegs(l => l + 1);
         startNextLeg();
         setInputVal('');
@@ -322,7 +386,6 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
 
       setAwayScore(newScore);
 
-      // KOLL OM 39 PILAR HAR KASTATS OCH INGEN HAR GÅTT UT (13 omgångar × 3 pilar)
       if (updatedRounds.length === 13) {
         setScoringActive(true);
         setInputVal('');
@@ -335,7 +398,26 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     setInputVal('');
   };
 
-  // SCORING-INMATNING
+  // Hjälpfunktion för att räkna ut och spara utgångs-prestationer (100+ut & under 20 pilar)
+  const checkAndAddCheckoutPerformances = (team, player, checkoutScore, roundsCount) => {
+    const totalDarts = roundsCount * 3;
+    const newPerfs = [];
+
+    // Prestation: Utgång på 100+
+    if (checkoutScore >= 100) {
+      newPerfs.push({ team, player, text: '100+ut' });
+    }
+
+    // Prestation: Under 20 pilar (dvs 19 pilar eller färre)
+    if (totalDarts < 20) {
+      newPerfs.push({ team, player, text: `${totalDarts} pil` });
+    }
+
+    if (newPerfs.length > 0) {
+      setPerformances(prev => [...prev, ...newPerfs]);
+    }
+  };
+
   const handleScoringSubmit = () => {
     const hVal = parseInt(scoringHomeInput, 10);
     const aVal = parseInt(scoringAwayInput, 10);
@@ -391,10 +473,11 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
 
   const handleEditRound = (index, team) => {
     const targetRound = rounds[index];
-    const currentVal = team === 'home' ? targetRound.home : targetRound.away;
-    if (currentVal === null) return;
+    const currentEntry = team === 'home' ? targetRound.home : targetRound.away;
+    if (!currentEntry) return;
 
-    const newValStr = prompt(`Ändra poäng för omgång ${index + 1}:`, currentVal === 'BUST' ? '0' : currentVal);
+    const currentVal = currentEntry.rawScore;
+    const newValStr = prompt(`Ändra kastad poäng för omgång ${index + 1}:`, currentVal);
     if (newValStr === null) return;
 
     const newVal = parseInt(newValStr, 10);
@@ -404,7 +487,43 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     }
 
     saveStateToHistory();
-    setRounds(prev => prev.map((r, i) => i === index ? { ...r, [team]: newVal } : r));
+
+    const rawRounds = rounds.map((r, i) => {
+      if (i === index) {
+        return {
+          ...r,
+          [team]: {
+            ...r[team],
+            rawScore: newVal
+          }
+        };
+      }
+      return r;
+    });
+
+    const { updatedRounds, newHomeScore, newAwayScore } = recalculateRoundsAndScores(rawRounds);
+
+    setRounds(updatedRounds);
+    setHomeScore(newHomeScore);
+    setAwayScore(newAwayScore);
+  };
+
+  const renderCellContent = (entry) => {
+    if (!entry) return '';
+    if (entry.score === 'BUST') {
+      return (
+        <span>
+          <span style={{ color: '#f43f5e' }}>BUST</span>
+          <span style={{ fontSize: '13px', color: '#94a3b8', marginLeft: '6px' }}>({entry.remaining})</span>
+        </span>
+      );
+    }
+    return (
+      <span>
+        <span style={{ color: '#fcd34d' }}>{entry.score}</span>
+        <span style={{ fontSize: '14px', color: '#38bdf8', marginLeft: '6px', fontWeight: 'normal' }}>({entry.remaining})</span>
+      </span>
+    );
   };
 
   if (!turn && match.id === 'AD') {
@@ -576,7 +695,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
         </div>
       </div>
 
-      {/* Logg med autoscroll */}
+      {/* Logg med resultat och kvarvarande poäng */}
       <div 
         ref={logContainerRef} 
         style={{ 
@@ -600,13 +719,13 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
           </thead>
           <tbody>
             {rounds.map((r, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #1e293b', fontSize: '22px', fontWeight: 'bold' }}>
-                <td onClick={() => handleEditRound(i, 'home')} style={{ color: r.home === 'BUST' ? '#f43f5e' : '#fcd34d', padding: '6px 0', cursor: 'pointer' }}>
-                  {r.home !== null ? r.home : ''}
+              <tr key={i} style={{ borderBottom: '1px solid #1e293b', fontSize: '18px', fontWeight: 'bold' }}>
+                <td onClick={() => handleEditRound(i, 'home')} style={{ padding: '6px 0', cursor: 'pointer' }}>
+                  {renderCellContent(r.home)}
                 </td>
-                <td style={{ color: '#475569', fontSize: '15px' }}>{r.round}</td>
-                <td onClick={() => handleEditRound(i, 'away')} style={{ color: r.away === 'BUST' ? '#f43f5e' : '#fcd34d', padding: '6px 0', cursor: 'pointer' }}>
-                  {r.away !== null ? r.away : ''}
+                <td style={{ color: '#475569', fontSize: '14px' }}>{r.round}</td>
+                <td onClick={() => handleEditRound(i, 'away')} style={{ padding: '6px 0', cursor: 'pointer' }}>
+                  {renderCellContent(r.away)}
                 </td>
               </tr>
             ))}
@@ -620,7 +739,6 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
           {inputVal || '0'}
         </div>
         
-        {/* Lilla knappen med 3 prickar för Remaining Score */}
         <button 
           onClick={handleOpenRemainingModal}
           disabled={isMatchFinished || !inputVal}
@@ -697,8 +815,25 @@ function PublicView({ matchData }) {
   const totalHomeLegs = matchData.subMatches.reduce((acc, sm) => acc + (sm.homeScore || 0), 0);
   const totalAwayLegs = matchData.subMatches.reduce((acc, sm) => acc + (sm.awayScore || 0), 0);
 
-  const homePerf = matchData.performances.filter(p => p.team === 'home');
-  const awayPerf = matchData.performances.filter(p => p.team === 'away');
+  // Gruppera prestationer per spelare
+  const groupPerformancesByPlayer = (perfs) => {
+    const map = {};
+    perfs.forEach(p => {
+      const name = p.player || 'Okänd spelare';
+      if (!map[name]) {
+        map[name] = [];
+      }
+      map[name].push(p.text);
+    });
+
+    return Object.keys(map).map(player => ({
+      player,
+      listText: map[player].join(', ')
+    }));
+  };
+
+  const homePerfGrouped = groupPerformancesByPlayer(matchData.performances.filter(p => p.team === 'home'));
+  const awayPerfGrouped = groupPerformancesByPlayer(matchData.performances.filter(p => p.team === 'away'));
 
   const regularMatches = matchData.subMatches.filter(sm => sm.id !== 'AD');
   const completedRegularCount = regularMatches.filter(sm => sm.status === 'completed').length;
@@ -767,12 +902,17 @@ function PublicView({ matchData }) {
         </table>
       </div>
 
+      {/* PRESTATIONER */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
         <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '10px' }}>
           <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '6px' }}>PRESTATIONER: HEMMALAG</div>
-          <div style={{ minHeight: '40px', fontSize: '11px' }}>
-            {homePerf.length > 0 ? (
-              homePerf.map((p, i) => <div key={i}>🎯 {p.player}: {p.text}</div>)
+          <div style={{ minHeight: '40px', fontSize: '12px' }}>
+            {homePerfGrouped.length > 0 ? (
+              homePerfGrouped.map((item, i) => (
+                <div key={i} style={{ marginBottom: '3px' }}>
+                  <strong>{item.player}</strong> - {item.listText}
+                </div>
+              ))
             ) : (
               <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Inga registrerade</span>
             )}
@@ -781,9 +921,13 @@ function PublicView({ matchData }) {
 
         <div style={{ border: '2px solid #0f172a', backgroundColor: '#fff', padding: '10px' }}>
           <div style={{ fontSize: '11px', fontWeight: 'bold', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', marginBottom: '6px' }}>PRESTATIONER: BORTALAG</div>
-          <div style={{ minHeight: '40px', fontSize: '11px' }}>
-            {awayPerf.length > 0 ? (
-              awayPerf.map((p, i) => <div key={i}>🎯 {p.player}: {p.text}</div>)
+          <div style={{ minHeight: '40px', fontSize: '12px' }}>
+            {awayPerfGrouped.length > 0 ? (
+              awayPerfGrouped.map((item, i) => (
+                <div key={i} style={{ marginBottom: '3px' }}>
+                  <strong>{item.player}</strong> - {item.listText}
+                </div>
+              ))
             ) : (
               <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Inga registrerade</span>
             )}
