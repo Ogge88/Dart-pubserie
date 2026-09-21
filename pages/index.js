@@ -30,7 +30,8 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
   // Tillstånd för att lägga till prestation manuellt i Admin
   const [newPerfTeam, setNewPerfTeam] = useState('home');
   const [newPerfPlayer, setNewPerfPlayer] = useState('');
-  const [newPerfText, setNewPerfText] = useState('180');
+  const [manualCheckoutScore, setManualCheckoutScore] = useState('');
+  const [newPerfTextType, setNewPerfTextType] = useState('180');
   const [customPerfText, setCustomPerfText] = useState('');
 
   const handleLogin = (e) => {
@@ -65,7 +66,17 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
       return;
     }
 
-    const textToSave = newPerfText === 'custom' ? customPerfText.trim() : newPerfText;
+    let textToSave = '';
+    if (newPerfTextType === '180') textToSave = '180';
+    else if (newPerfTextType === 'utgang') {
+        if(!manualCheckoutScore || isNaN(manualCheckoutScore) || manualCheckoutScore < 100 || manualCheckoutScore > 170 || IMPOSSIBLE_CHECKOUTS.includes(parseInt(manualCheckoutScore))) {
+            alert('Ange en giltig utgångspoäng (100-170).');
+            return;
+        }
+        textToSave = `${manualCheckoutScore} ut`;
+    }
+    else if (newPerfTextType === 'custom') textToSave = customPerfText.trim();
+
     if (!textToSave) {
       alert('Ange prestationsbeskrivning.');
       return;
@@ -85,6 +96,7 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
 
     setNewPerfPlayer('');
     setCustomPerfText('');
+    setManualCheckoutScore('');
   };
 
   const handleRemovePerformance = (indexToRemove) => {
@@ -183,17 +195,9 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
             style={{ backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569' }}
           />
 
-          <select value={newPerfText} onChange={(e) => setNewPerfText(e.target.value)} style={{ backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569' }}>
+          <select value={newPerfTextType} onChange={(e) => setNewPerfTextType(e.target.value)} style={{ backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569' }}>
             <option value="180">180</option>
-            <option value="100+ut">100+ut</option>
-            <option value="19 pil">19 pil</option>
-            <option value="18 pil">18 pil</option>
-            <option value="17 pil">17 pil</option>
-            <option value="16 pil">16 pil</option>
-            <option value="15 pil">15 pil</option>
-            <option value="14 pil">14 pil</option>
-            <option value="13 pil">13 pil</option>
-            <option value="12 pil">12 pil</option>
+            <option value="utgang">Hög utgång (100+)</option>
             <option value="custom">Annan text...</option>
           </select>
 
@@ -202,10 +206,22 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
           </button>
         </div>
 
-        {newPerfText === 'custom' && (
+        {newPerfTextType === 'utgang' && (
           <div style={{ marginBottom: '15px' }}>
             <input
-              placeholder="Skriv t.ex: 110 utgång"
+              type="number"
+              placeholder="Ange utgångspoäng (t.ex. 143)"
+              value={manualCheckoutScore}
+              onChange={(e) => setManualCheckoutScore(e.target.value)}
+              style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', boxSizing: 'border-box' }}
+            />
+          </div>
+        )}
+
+        {newPerfTextType === 'custom' && (
+          <div style={{ marginBottom: '15px' }}>
+            <input
+              placeholder="Skriv t.ex: 15 pilars leg"
               value={customPerfText}
               onChange={(e) => setCustomPerfText(e.target.value)}
               style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', boxSizing: 'border-box' }}
@@ -241,7 +257,7 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
   );
 }
 
-// --- 2. DOMAR VY ---
+// --- 2. DOMAR VY (A01Scorer med buggfix) ---
 function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   const [homeScore, setHomeScore] = useState(501);
   const [awayScore, setAwayScore] = useState(501);
@@ -482,7 +498,20 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
       setHomeScore(newScore);
       setTurn('away');
     } else {
-      const updatedRounds = rounds.map((r, i) => i === rounds.length - 1 ? { ...r, away: entryData } : r);
+      // Bortalagets tur.
+      // BUGGFIX: Om bortalaget kastar i runda 1 (rounds är tom), skapa en ny runda direkt.
+      let updatedRounds;
+      if (rounds.length === 0) {
+        // Första kastet i leget är bortas
+        updatedRounds = [{ round: 3, home: null, away: entryData }];
+      } else if (rounds[rounds.length - 1].away === null) {
+        // Normal runda, fyll i bortas kast
+        updatedRounds = rounds.map((r, i) => i === rounds.length - 1 ? { ...r, away: entryData } : r);
+      } else {
+        // Om hemma inte har kastat ännu denna runda (borta kastar först pga startar leg)
+        updatedRounds = [...rounds, { round: (rounds.length + 1) * 3, home: null, away: entryData }];
+      }
+      
       setRounds(updatedRounds);
 
       if (confirmedCheckout) {
@@ -512,11 +541,11 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
     const newPerfs = [];
 
     if (checkoutScore >= 100) {
-      newPerfs.push({ team, player, text: '100+ut' });
+      newPerfs.push({ team, player, text: `${checkoutScore} ut` });
     }
 
     if (totalDarts < 20) {
-      newPerfs.push({ team, player, text: `${totalDarts} pil` });
+      newPerfs.push({ team, player, text: `${totalDarts} pilars leg` });
     }
 
     if (newPerfs.length > 0) {
@@ -650,7 +679,7 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave }) {
   }
 
   return (
-    <div style={{ maxWidth: '550px', margin: '0 auto', backgroundColor: '#020617', color: '#fff', padding: '12px', borderRadius: '16px', border: '1px solid #1e293b', fontFamily: 'sans-serif', userSelect: 'none' }}>
+    <div style={{ maxWidth: '550px', margin: '0 auto', backgroundColor: '#020617', color: '#fff', padding: '12px', borderRadius: '166px', border: '1px solid #1e293b', fontFamily: 'sans-serif', userSelect: 'none' }}>
       
       {/* CHECKOUT MODAL */}
       {confirmCheckout && (
@@ -913,7 +942,7 @@ function RefereeView({ matchData, activeSubMatchId, setActiveSubMatchId, onSaveM
   return <N01Scorer match={activeMatch} homeTeam={matchData.homeTeam} awayTeam={matchData.awayTeam} onBack={() => setActiveSubMatchId(null)} onSave={onSaveMatch} />;
 }
 
-// --- 3. MODERN PUBLIK VY ---
+// --- 3. MODERN PUBLIK VY (Med samma layout, men större text & tydligare utgångar) ---
 function PublicView({ matchData }) {
   const totalHomeMatches = matchData.subMatches.reduce((acc, sm) => acc + (sm.homeScore > sm.awayScore ? 1 : 0), 0);
   const totalAwayMatches = matchData.subMatches.reduce((acc, sm) => acc + (sm.awayScore > sm.homeScore ? 1 : 0), 0);
@@ -948,62 +977,62 @@ function PublicView({ matchData }) {
   // Hjälpfunktion för att välja färg på prestations-badges
   const getBadgeStyle = (text) => {
     if (text === '180') {
-      return { backgroundColor: '#f59e0b', color: '#0f172a', fontWeight: 'bold' }; // Guld
+      return { backgroundColor: '#f59e0b', color: '#0f172a', fontWeight: '900' }; // Guld
     }
-    if (text === '100+ut') {
-      return { backgroundColor: '#10b981', color: '#fff', fontWeight: 'bold' }; // Grön
+    if (text.includes('ut')) {
+      return { backgroundColor: '#10b981', color: '#fff', fontWeight: 'bold' }; // Grön för alla utgångar
     }
     if (text.includes('pil')) {
-      return { backgroundColor: '#3b82f6', color: '#fff', fontWeight: 'bold' }; // Blå
+      return { backgroundColor: '#3b82f6', color: '#fff', fontWeight: '500' }; // Blå
     }
     return { backgroundColor: '#475569', color: '#fff' };
   };
 
   return (
-    <div style={{ maxWidth: '850px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', fontFamily: 'sans-serif' }}>
       
       {/* MATCH HEADER KORT */}
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '20px', marginBottom: '20px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}>
+      <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '25px', marginBottom: '20px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
             🎯 PUBSERIEN MATCHPROTOKOLL
           </span>
-          <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+          <span style={{ fontSize: '14px', color: '#94a3b8' }}>
             {completedCount === 10 ? '🏁 Match Avslutad' : `⚡ Spelade matcher: ${completedCount}/10`}
           </span>
         </div>
 
         {/* Lagsammandrag med stor poäng */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '15px', padding: '10px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '20px', padding: '10px 0' }}>
           
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '22px', fontWeight: '900', color: '#fff', marginBottom: '4px' }}>
+            <div style={{ fontSize: '32px', fontWeight: '900', color: '#fff', marginBottom: '6px', letterSpacing: '-1px' }}>
               {matchData.homeTeam || 'HEMMALAG'}
             </div>
-            <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 'bold' }}>HEMMALAG</div>
+            <div style={{ fontSize: '14px', color: '#60a5fa', fontWeight: 'bold', textTransform: 'uppercase' }}>HEMMALAG</div>
           </div>
 
-          <div style={{ textAlign: 'center', backgroundColor: '#0f172a', padding: '12px 24px', borderRadius: '12px', border: '1px solid #334155' }}>
-            <div style={{ fontSize: '36px', fontWeight: '900', color: '#fcd34d', lineHeight: 1 }}>
+          <div style={{ textAlign: 'center', backgroundColor: '#0f172a', padding: '15px 30px', borderRadius: '12px', border: '1px solid #334155' }}>
+            <div style={{ fontSize: '56px', fontWeight: '900', color: '#fcd34d', lineHeight: 1, fontFamily: 'monospace' }}>
               {totalHomeMatches} - {totalAwayMatches}
             </div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px', fontWeight: 'bold' }}>
+            <div style={{ fontSize: '16px', color: '#94a3b8', marginTop: '8px', fontWeight: 'bold' }}>
               Legs: {totalHomeLegs} - {totalAwayLegs}
             </div>
           </div>
 
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '22px', fontWeight: '900', color: '#fff', marginBottom: '4px' }}>
+            <div style={{ fontSize: '32px', fontWeight: '900', color: '#fff', marginBottom: '6px', letterSpacing: '-1px' }}>
               {matchData.awayTeam || 'BORTALAG'}
             </div>
-            <div style={{ fontSize: '12px', color: '#f43f5e', fontWeight: 'bold' }}>BORTALAG</div>
+            <div style={{ fontSize: '14px', color: '#f43f5e', fontWeight: 'bold', textTransform: 'uppercase' }}>BORTALAG</div>
           </div>
 
         </div>
 
         {/* Framstegsmätare */}
-        <div style={{ marginTop: '15px', backgroundColor: '#0f172a', borderRadius: '10px', height: '8px', overflow: 'hidden', border: '1px solid #334155' }}>
+        <div style={{ marginTop: '20px', backgroundColor: '#0f172a', borderRadius: '10px', height: '10px', overflow: 'hidden', border: '1px solid #334155' }}>
           <div style={{ width: `${progressPercent}%`, backgroundColor: '#3b82f6', height: '100%', transition: 'width 0.5s ease' }} />
         </div>
 
@@ -1011,14 +1040,14 @@ function PublicView({ matchData }) {
 
       {/* MATCHTABELL */}
       <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', color: '#fff', fontSize: '14px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', color: '#fff', fontSize: '16px' }}>
           <thead>
-            <tr style={{ backgroundColor: '#0f172a', color: '#94a3b8', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              <th style={{ padding: '12px 16px', textAlign: 'left', width: '38%' }}>{matchData.homeTeam || 'Hemmalag'}</th>
-              <th style={{ padding: '12px 8px', width: '8%' }}>Legs</th>
-              <th style={{ padding: '12px 8px', width: '8%' }}>Match</th>
-              <th style={{ padding: '12px 8px', width: '8%' }}>Legs</th>
-              <th style={{ padding: '12px 16px', textAlign: 'right', width: '38%' }}>{matchData.awayTeam || 'Bortalag'}</th>
+            <tr style={{ backgroundColor: '#0f172a', color: '#94a3b8', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <th style={{ padding: '15px 20px', textAlign: 'left', width: '38%' }}>{matchData.homeTeam || 'Hemmalag'}</th>
+              <th style={{ padding: '15px 10px', width: '8%' }}>Legs</th>
+              <th style={{ padding: '15px 10px', width: '8%' }}>Match</th>
+              <th style={{ padding: '15px 10px', width: '8%' }}>Legs</th>
+              <th style={{ padding: '15px 20px', textAlign: 'right', width: '38%' }}>{matchData.awayTeam || 'Bortalag'}</th>
             </tr>
           </thead>
           <tbody>
@@ -1035,29 +1064,29 @@ function PublicView({ matchData }) {
                     backgroundColor: isAD ? 'rgba(234, 179, 8, 0.08)' : (index % 2 === 0 ? '#1e293b' : '#182232')
                   }}>
                     {/* Hemma Spelare */}
-                    <td style={{ padding: '12px 16px', textAlign: 'left', fontWeight: isHomeWinner ? 'bold' : 'normal', color: isHomeWinner ? '#34d399' : '#e2e8f0' }}>
+                    <td style={{ padding: '15px 20px', textAlign: 'left', fontWeight: isHomeWinner ? '900' : '500', color: isHomeWinner ? '#34d399' : '#e2e8f0', fontSize: '18px' }}>
                       {sm.homePlayer || '-'} {isHomeWinner && ' 🏆'}
                     </td>
 
                     {/* Hemma Legs */}
-                    <td style={{ padding: '12px 8px', fontWeight: 'bold', color: isHomeWinner ? '#34d399' : '#94a3b8' }}>
+                    <td style={{ padding: '15px 10px', fontWeight: '900', color: isHomeWinner ? '#34d399' : '#fff', fontSize: '20px', fontFamily: 'monospace' }}>
                       {sm.status === 'completed' ? sm.homeScore : '-'}
                     </td>
 
                     {/* Match ID Badge */}
-                    <td style={{ padding: '12px 8px' }}>
-                      <span style={{ backgroundColor: isAD ? '#eab308' : '#334155', color: isAD ? '#0f172a' : '#fcd34d', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold', fontSize: '11px' }}>
+                    <td style={{ padding: '15px 10px' }}>
+                      <span style={{ backgroundColor: isAD ? '#eab308' : '#334155', color: isAD ? '#0f172a' : '#fcd34d', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
                         {sm.id}
                       </span>
                     </td>
 
                     {/* Borta Legs */}
-                    <td style={{ padding: '12px 8px', fontWeight: 'bold', color: isAwayWinner ? '#34d399' : '#94a3b8' }}>
+                    <td style={{ padding: '15px 10px', fontWeight: '900', color: isAwayWinner ? '#34d399' : '#fff', fontSize: '20px', fontFamily: 'monospace' }}>
                       {sm.status === 'completed' ? sm.awayScore : '-'}
                     </td>
 
                     {/* Borta Spelare */}
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: isAwayWinner ? 'bold' : 'normal', color: isAwayWinner ? '#34d399' : '#e2e8f0' }}>
+                    <td style={{ padding: '15px 20px', textAlign: 'right', fontWeight: isAwayWinner ? '900' : '500', color: isAwayWinner ? '#34d399' : '#e2e8f0', fontSize: '18px' }}>
                       {isAwayWinner && '🏆 '} {sm.awayPlayer || '-'}
                     </td>
                   </tr>
@@ -1065,7 +1094,7 @@ function PublicView({ matchData }) {
                   {/* Avskiljare mellan block */}
                   {isBlockEnd && (
                     <tr>
-                      <td colSpan="5" style={{ backgroundColor: '#0f172a', padding: '4px', borderBottom: '1px solid #334155' }} />
+                      <td colSpan="5" style={{ backgroundColor: '#0f172a', padding: '6px', borderBottom: '1px solid #334155' }} />
                     </tr>
                   )}
                 </React.Fragment>
@@ -1076,22 +1105,22 @@ function PublicView({ matchData }) {
       </div>
 
       {/* PRESTATIONER Sektion */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
         
         {/* Hemma prestationer */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#60a5fa', fontWeight: 'bold', fontSize: '13px', marginBottom: '12px', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>
+        <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#60a5fa', fontWeight: 'bold', fontSize: '16px', marginBottom: '15px', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
             <span>🔥</span> PRESTATIONER: {matchData.homeTeam || 'HEMMALAG'}
           </div>
           
           {homePerfGrouped.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {homePerfGrouped.map((item, i) => (
-                <div key={i} style={{ backgroundColor: '#0f172a', padding: '8px 12px', borderRadius: '8px', border: '1px solid #334155' }}>
-                  <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '13px', marginBottom: '6px' }}>{item.player}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <div key={i} style={{ backgroundColor: '#0f172a', padding: '12px 15px', borderRadius: '8px', border: '1px solid #334155' }}>
+                  <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '16px', marginBottom: '8px' }}>{item.player}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {item.items.map((t, idx) => (
-                      <span key={idx} style={{ ...getBadgeStyle(t), padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                      <span key={idx} style={{ ...getBadgeStyle(t), padding: '4px 10px', borderRadius: '4px', fontSize: '14px' }}>
                         {t}
                       </span>
                     ))}
@@ -1100,24 +1129,24 @@ function PublicView({ matchData }) {
               ))}
             </div>
           ) : (
-            <div style={{ color: '#64748b', fontSize: '12px', fontStyle: 'italic', padding: '10px 0' }}>Inga registrerade ännu</div>
+            <div style={{ color: '#64748b', fontSize: '14px', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>Inga registrerade ännu</div>
           )}
         </div>
 
         {/* Borta prestationer */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f43f5e', fontWeight: 'bold', fontSize: '13px', marginBottom: '12px', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>
+        <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f43f5e', fontWeight: 'bold', fontSize: '16px', marginBottom: '15px', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
             <span>🔥</span> PRESTATIONER: {matchData.awayTeam || 'BORTALAG'}
           </div>
 
           {awayPerfGrouped.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {awayPerfGrouped.map((item, i) => (
-                <div key={i} style={{ backgroundColor: '#0f172a', padding: '8px 12px', borderRadius: '8px', border: '1px solid #334155' }}>
-                  <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '13px', marginBottom: '6px' }}>{item.player}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <div key={i} style={{ backgroundColor: '#0f172a', padding: '12px 15px', borderRadius: '8px', border: '1px solid #334155' }}>
+                  <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '16px', marginBottom: '8px' }}>{item.player}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {item.items.map((t, idx) => (
-                      <span key={idx} style={{ ...getBadgeStyle(t), padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                      <span key={idx} style={{ ...getBadgeStyle(t), padding: '4px 10px', borderRadius: '4px', fontSize: '14px' }}>
                         {t}
                       </span>
                     ))}
@@ -1126,30 +1155,30 @@ function PublicView({ matchData }) {
               ))}
             </div>
           ) : (
-            <div style={{ color: '#64748b', fontSize: '12px', fontStyle: 'italic', padding: '10px 0' }}>Inga registrerade ännu</div>
+            <div style={{ color: '#64748b', fontSize: '14px', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>Inga registrerade ännu</div>
           )}
         </div>
 
       </div>
 
       {/* FOOTER STATISTIK KORT */}
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', padding: '12px', textAlign: 'center', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+      <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', padding: '15px', textAlign: 'center', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
         <div>
-          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>TOTALT 180:OR</div>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#f59e0b', marginTop: '2px' }}>
-            🎯 {matchData.performances.filter(p => p.text === '180').length} st
+          <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>TOTALT 180:OR</div>
+          <div style={{ fontSize: '28px', fontWeight: '900', color: '#f59e0b', marginTop: '4px', fontFamily: 'monospace' }}>
+            🎯 {matchData.performances.filter(p => p.text === '180').length}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>100+ UTGÅNGAR</div>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981', marginTop: '2px' }}>
-            ✨ {matchData.performances.filter(p => p.text === '100+ut').length} st
+          <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>100+ UTGÅNGAR</div>
+          <div style={{ fontSize: '28px', fontWeight: '900', color: '#10b981', marginTop: '4px', fontFamily: 'monospace' }}>
+            ✨ {matchData.performances.filter(p => p.text.includes('ut')).length}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold' }}>SNABBA LEG (&lt;20 PIL)</div>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6', marginTop: '2px' }}>
-            ⚡ {matchData.performances.filter(p => p.text.includes('pil')).length} st
+          <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>SNABBA LEG (&lt;20 PIL)</div>
+          <div style={{ fontSize: '28px', fontWeight: '900', color: '#3b82f6', marginTop: '4px', fontFamily: 'monospace' }}>
+            ⚡ {matchData.performances.filter(p => p.text.includes('pil')).length}
           </div>
         </div>
       </div>
