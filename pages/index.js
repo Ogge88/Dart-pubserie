@@ -1,3 +1,8 @@
+Här är den fullständiga, uppdaterade koden att ersätta din gamla kod/komponent med.
+
+Jag har integrerat den nya designen (Förslag 1 + 3) i PublicView (Publikvyn). När en match får statusen live expanderar raden, och poäng/legs visas i stora, tydliga neongula sifferboxar som är lättlästa från långt håll.
+
+JavaScript
 import React, { useState, useRef, useEffect } from 'react';
 
 const INITIAL_SUB_MATCHES = [
@@ -727,558 +732,366 @@ function N01Scorer({ match, homeTeam, awayTeam, onBack, onSave, onLiveUpdate }) 
         </div>
       )}
 
-      {scoringActive && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: '20px' }}>
-          <div style={{ backgroundColor: '#0f172a', border: '2px solid #eab308', borderRadius: '16px', padding: '24px', textAlign: 'center', maxWidth: '420px', width: '100%' }}>
-
-            {!scoringConfirm ? (
-              <>
-                <div style={{ fontSize: '36px', marginBottom: '8px' }}>⏱️</div>
-                <h2 style={{ color: '#eab308', fontSize: '24px', margin: '0 0 6px 0', fontWeight: '900' }}>39 PILAR UPPNÅD!</h2>
-                <p style={{ color: '#cbd5e1', fontSize: '14px', marginBottom: '20px' }}>
-                  Ingen spelare gick ut. Leget avgörs med <strong>Scoring (1 omgång, max 180 poäng)</strong>.
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', textAlign: 'left' }}>
-                  <div>
-                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
-                      POÄNG {homeName.toUpperCase()}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="180"
-                      placeholder="0 - 180"
-                      value={scoringHomeInput}
-                      onChange={(e) => setScoringHomeInput(e.target.value)}
-                      style={{ width: '100%', padding: '12px', fontSize: '20px', fontWeight: 'bold', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#fcd34d', boxSizing: 'border-box' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
-                      POÄNG {awayName.toUpperCase()}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="180"
-                      placeholder="0 - 180"
-                      value={scoringAwayInput}
-                      onChange={(e) => setScoringAwayInput(e.target.value)}
-                      style={{ width: '100%', padding: '12px', fontSize: '20px', fontWeight: 'bold', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#fcd34d', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                </div>
-
-                <button onClick={handleScoringSubmit} style={{ width: '100%', backgroundColor: '#eab308', color: '#0f172a', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
-                  Registrera Scoring
-                </button>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: '40px', marginBottom: '8px' }}>🏆</div>
-                <h3 style={{ color: '#fff', fontSize: '20px', margin: '0 0 10px 0' }}>Bekräfta vinnare av scoring</h3>
-                <p style={{ color: '#cbd5e1', fontSize: '18px', marginBottom: '20px' }}>
-                  Vann <strong style={{ color: '#34d399' }}>{scoringConfirm.winnerName}</strong> scoringen?
-                  <br />
-                  <span style={{ fontSize: '14px', color: '#94a3b8' }}>
-                    ({homeName}: {scoringConfirm.homeVal} vs {awayName}: {scoringConfirm.awayVal})
-                  </span>
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <button onClick={confirmScoringWinner} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '16px', borderRadius: '10px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    JA
-                  </button>
-                  <button onClick={cancelScoringConfirm} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '16px', borderRadius: '10px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    NEJ (Gör om)
-                  </button>
-                </div>
-              </>
-            )}
-
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a', padding: '8px 12px', borderRadius: '10px', marginBottom: '10px' }}>
-        <button onClick={onBack} style={{ backgroundColor: '#334155', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>← Tillbaka</button>
-        <div style={{ color: '#eab308', fontWeight: 'bold', fontSize: '14px' }}>MATCH {match.id} ({homeLegs} - {awayLegs}) <span style={{ color: '#34d399', fontSize: '12px', marginLeft: '6px' }}>🔴 LIVE</span></div>
-        <button onClick={handleUndo} disabled={historyStack.length === 0} style={{ backgroundColor: historyStack.length > 0 ? '#d97706' : '#1e293b', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: historyStack.length > 0 ? 'pointer' : 'default', fontWeight: 'bold', fontSize: '12px', opacity: historyStack.length > 0 ? 1 : 0.4 }}>
-          ↩ Ångra
+      {/* Header med meny & knapp för att spara/slutföra */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <button onClick={onBack} style={{ backgroundColor: '#1e293b', color: '#94a3b8', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>
+          ← Tillbaka
+        </button>
+        <span style={{ color: '#eab308', fontWeight: 'bold', fontSize: '16px' }}>Match {match.id} ({match.type === 'single' ? 'Singel' : 'Dubbel'})</span>
+        <button onClick={() => onSave({ homeScore: homeLegs, awayScore: awayLegs, currentHomePoints: homeScore, currentAwayPoints: awayScore, status: isMatchFinished ? 'completed' : 'live' }, performances)} style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>
+          Spara & Stäng
         </button>
       </div>
 
-      {/* Stora poängsiffror */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-        <div style={{ backgroundColor: turn === 'home' && !isMatchFinished ? '#064e3b' : '#0f172a', border: turn === 'home' && !isMatchFinished ? '4px solid #10b981' : '2px solid #1e293b', borderRadius: '14px', padding: '12px 6px', textAlign: 'center' }}>
-          <div style={{ color: turn === 'home' ? '#34d399' : '#94a3b8', fontSize: '15px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {homeName} {legStarter === 'home' && '🟢'}
-          </div>
-          <div style={{ fontSize: '64px', fontWeight: '900', color: '#fff', fontFamily: 'monospace', lineHeight: 1, margin: '6px 0' }}>{homeScore}</div>
-          <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>LEGS: {homeLegs}</div>
+      {/* Spelarkort med poäng och legs */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        {/* Hemmaspelare */}
+        <div style={{ backgroundColor: turn === 'home' ? '#1e293b' : '#0f172a', padding: '12px', borderRadius: '12px', border: turn === 'home' ? '2px solid #3b82f6' : '1px solid #1e293b', textAlign: 'center' }}>
+          <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
+          <div style={{ fontSize: '42px', fontWeight: '900', color: turn === 'home' ? '#60a5fa' : '#cbd5e1', lineHeight: '1' }}>{homeScore}</div>
+          <div style={{ fontSize: '14px', color: '#fcd34d', fontWeight: 'bold', marginTop: '6px' }}>Legs: {homeLegs}</div>
         </div>
 
-        <div style={{ backgroundColor: turn === 'away' && !isMatchFinished ? '#064e3b' : '#0f172a', border: turn === 'away' && !isMatchFinished ? '4px solid #10b981' : '2px solid #1e293b', borderRadius: '14px', padding: '12px 6px', textAlign: 'center' }}>
-          <div style={{ color: turn === 'away' ? '#34d399' : '#94a3b8', fontSize: '15px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {awayName} {legStarter === 'away' && '🟢'}
-          </div>
-          <div style={{ fontSize: '64px', fontWeight: '900', color: '#fff', fontFamily: 'monospace', lineHeight: 1, margin: '6px 0' }}>{awayScore}</div>
-          <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>LEGS: {awayLegs}</div>
+        {/* Bortaspelare */}
+        <div style={{ backgroundColor: turn === 'away' ? '#1e293b' : '#0f172a', padding: '12px', borderRadius: '12px', border: turn === 'away' ? '2px solid #f43f5e' : '1px solid #1e293b', textAlign: 'center' }}>
+          <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayName}</div>
+          <div style={{ fontSize: '42px', fontWeight: '900', color: turn === 'away' ? '#f43f5e' : '#cbd5e1', lineHeight: '1' }}>{awayScore}</div>
+          <div style={{ fontSize: '14px', color: '#fcd34d', fontWeight: 'bold', marginTop: '6px' }}>Legs: {awayLegs}</div>
         </div>
       </div>
 
-      {/* Logg med resultat */}
-      <div
-        ref={logContainerRef}
-        style={{
-          backgroundColor: '#0f172a',
-          border: '1px solid #1e293b',
-          borderRadius: '12px',
-          padding: '10px',
-          height: '160px',
-          overflowY: 'auto',
-          marginBottom: '10px',
-          scrollBehavior: 'smooth'
-        }}
-      >
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+      {/* Protokoll över kastade pilar */}
+      <div ref={logContainerRef} style={{ height: '140px', overflowY: 'auto', backgroundColor: '#090d16', borderRadius: '8px', padding: '8px', marginBottom: '12px', border: '1px solid #1e293b' }}>
+        <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse', textAlign: 'center' }}>
           <thead>
-            <tr style={{ borderBottom: '2px solid #334155', color: '#94a3b8', fontSize: '12px' }}>
-              <th style={{ width: '40%', paddingBottom: '4px' }}>{homeName}</th>
-              <th style={{ width: '20%', paddingBottom: '4px' }}>PILAR</th>
-              <th style={{ width: '40%', paddingBottom: '4px' }}>{awayName}</th>
+            <tr style={{ color: '#64748b', borderBottom: '1px solid #1e293b' }}>
+              <th style={{ paddingBottom: '4px' }}>Hemmaspelare</th>
+              <th style={{ paddingBottom: '4px', width: '50px' }}>Pil</th>
+              <th style={{ paddingBottom: '4px' }}>Bortaspelare</th>
             </tr>
           </thead>
           <tbody>
             {rounds.map((r, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #1e293b', fontSize: '18px', fontWeight: 'bold' }}>
-                <td onClick={() => handleEditRound(i, 'home')} style={{ padding: '6px 0', cursor: 'pointer' }}>
-                  {renderCellContent(r.home)}
-                </td>
-                <td style={{ color: '#475569', fontSize: '14px' }}>{r.round}</td>
-                <td onClick={() => handleEditRound(i, 'away')} style={{ padding: '6px 0', cursor: 'pointer' }}>
-                  {renderCellContent(r.away)}
-                </td>
+              <tr key={i} style={{ borderBottom: '1px solid #0f172a' }}>
+                <td onClick={() => handleEditRound(i, 'home')} style={{ padding: '4px', cursor: 'pointer' }}>{renderCellContent(r.home)}</td>
+                <td style={{ color: '#475569', fontSize: '11px' }}>{r.round}</td>
+                <td onClick={() => handleEditRound(i, 'away')} style={{ padding: '4px', cursor: 'pointer' }}>{renderCellContent(r.away)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Knappsats & Kvarvarande Poäng */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-        <div style={{ flex: 1, backgroundColor: '#0f172a', border: '2px solid #334155', padding: '8px', textAlign: 'center', fontSize: '32px', color: '#fcd34d', borderRadius: '12px', height: '50px', fontFamily: 'monospace', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-          {inputVal || '0'}
+      {/* Knappsats för inmatning */}
+      {!isMatchFinished && !scoringActive && (
+        <div>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <div style={{ flex: 1, backgroundColor: '#0f172a', padding: '12px', borderRadius: '10px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold', color: '#fff', border: '1px solid #334155' }}>
+              {inputVal || '0'}
+            </div>
+            <button onClick={handleOpenRemainingModal} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '0 12px', borderRadius: '10px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>
+              Sätt kvar
+            </button>
+            <button onClick={handleUndo} style={{ backgroundColor: '#334155', color: '#fff', border: 'none', padding: '0 16px', borderRadius: '10px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>
+              Ångra
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+              <button key={num} onClick={() => handleNumClick(num.toString())} style={{ backgroundColor: '#1e293b', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {num}
+              </button>
+            ))}
+            <button onClick={handleClear} style={{ backgroundColor: '#991b1b', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
+              C
+            </button>
+            <button onClick={() => handleNumClick('0')} style={{ backgroundColor: '#1e293b', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>
+              0
+            </button>
+            <button onClick={handleEnterScore} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
+              OK
+            </button>
+          </div>
         </div>
+      )}
 
-        <button
-          onClick={handleOpenRemainingModal}
-          disabled={isMatchFinished || !inputVal}
-          title="Ange som återstående poäng"
-          style={{
-            backgroundColor: inputVal ? '#1e293b' : '#0f172a',
-            color: inputVal ? '#60a5fa' : '#475569',
-            border: '2px solid #334155',
-            borderRadius: '12px',
-            width: '50px',
-            height: '50px',
-            fontSize: '22px',
-            fontWeight: 'bold',
-            cursor: inputVal ? 'pointer' : 'default',
-            display: 'flex',
-            alignItems: 'center',
-            justify: 'center'
-          }}
-        >
-          •••
-        </button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-        {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map((num) => (
-          <button key={num} onClick={() => handleNumClick(num)} disabled={isMatchFinished} style={{ backgroundColor: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '12px', padding: '16px 0', fontSize: '26px', fontWeight: 'bold', cursor: 'pointer', touchAction: 'manipulation' }}>
-            {num}
+      {/* Extra scoringvy om matchen går till 13 omgångar uden utgång */}
+      {scoringActive && (
+        <div style={{ backgroundColor: '#1e293b', padding: '15px', borderRadius: '12px', border: '2px solid #eab308' }}>
+          <h3 style={{ color: '#eab308', margin: '0 0 10px 0', fontSize: '16px', textAlign: 'center' }}>SCORING (Leg avgörs med flest poäng)</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ fontSize: '12px', color: '#94a3b8' }}>{homeName}</label>
+              <input type="number" placeholder="Poäng" value={scoringHomeInput} onChange={(e) => setScoringHomeInput(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', backgroundColor: '#0f172a', border: '1px solid #475569', color: '#fff', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: '#94a3b8' }}>{awayName}</label>
+              <input type="number" placeholder="Poäng" value={scoringAwayInput} onChange={(e) => setScoringAwayInput(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', backgroundColor: '#0f172a', border: '1px solid #475569', color: '#fff', boxSizing: 'border-box' }} />
+            </div>
+          </div>
+          <button onClick={handleScoringSubmit} style={{ width: '100%', backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+            Registrera Scoring
           </button>
-        ))}
-        <button onClick={handleClear} disabled={isMatchFinished} style={{ backgroundColor: '#7f1d1d', color: '#fff', border: '1px solid #991b1b', borderRadius: '12px', padding: '16px 0', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>C</button>
-        <button onClick={() => handleNumClick('0')} disabled={isMatchFinished} style={{ backgroundColor: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '12px', padding: '16px 0', fontSize: '26px', fontWeight: 'bold', cursor: 'pointer' }}>0</button>
-        <button onClick={handleEnterScore} disabled={isMatchFinished} style={{ backgroundColor: '#2563eb', color: '#fff', border: '1px solid #3b82f6', borderRadius: '12px', padding: '16px 0', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>OK</button>
-      </div>
+        </div>
+      )}
 
-      {isMatchFinished && (
-        <button onClick={() => { onSave({ ...match, homeScore: homeLegs, awayScore: awayLegs, status: 'completed' }, performances); onBack(); }} style={{ width: '100%', backgroundColor: '#059669', color: '#fff', border: '2px solid #34d399', padding: '16px', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', marginTop: '12px', cursor: 'pointer' }}>
-          ✓ SKICKA RESULTAT ({homeLegs} - {awayLegs})
-        </button>
+      {scoringConfirm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 110, padding: '20px' }}>
+          <div style={{ backgroundColor: '#0f172a', border: '2px solid #eab308', borderRadius: '16px', padding: '24px', textAlign: 'center', maxWidth: '400px', width: '100%' }}>
+            <h3 style={{ color: '#fff', fontSize: '20px', margin: '0 0 10px 0' }}>Bekräfta Scoring-vinnare</h3>
+            <p style={{ color: '#cbd5e1', fontSize: '16px', marginBottom: '20px' }}>
+              Vinnare av legget är <strong style={{ color: '#fcd34d' }}>{scoringConfirm.winnerName}</strong> ({scoringConfirm.homeVal} vs {scoringConfirm.awayVal}).
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button onClick={confirmScoringWinner} style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                Godkänn
+              </button>
+              <button onClick={cancelScoringConfirm} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                Avbryt
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-function RefereeView({ matchData, activeSubMatchId, setActiveSubMatchId, onSaveMatch, onLiveUpdate }) {
-  const handleSelectMatch = (sm) => {
-    setActiveSubMatchId(sm.id);
-    if (sm.status === 'pending') {
-      onLiveUpdate(sm.id, { status: 'live' });
-    }
-  };
-
-  const activeMatch = matchData.subMatches.find(m => m.id === activeSubMatchId);
-
-  if (!activeMatch) {
-    return (
-      <div style={{ maxWidth: '650px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-        <h1 style={{ color: '#4ade80', fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>Välj delmatch att döma</h1>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          {matchData.subMatches.map((sm) => {
-            const isLive = sm.status === 'live';
-            const isCompleted = sm.status === 'completed';
-
-            return (
-              <button key={sm.id} onClick={() => handleSelectMatch(sm)} style={{ backgroundColor: isLive ? '#064e3b' : '#1e293b', color: '#fff', border: isLive ? '2px solid #10b981' : '1px solid #334155', padding: '16px 12px', borderRadius: '10px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                <div>
-                  <span style={{ color: '#eab308', fontWeight: 'bold', marginRight: '8px', fontSize: '16px' }}>{sm.id}</span>
-                  <span style={{ fontSize: '14px' }}>{sm.homePlayer || 'Hemmalag'} vs {sm.awayPlayer || 'Bortalag'}</span>
-                </div>
-                <span style={{ backgroundColor: isCompleted ? '#064e3b' : isLive ? '#10b981' : '#334155', color: isCompleted ? '#6ee7b7' : isLive ? '#fff' : '#cbd5e1', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
-                  {isCompleted ? `${sm.homeScore} - ${sm.awayScore}` : isLive ? 'LIVE' : 'Välj'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-  return <N01Scorer match={activeMatch} homeTeam={matchData.homeTeam} awayTeam={matchData.awayTeam} onBack={() => setActiveSubMatchId(null)} onSave={onSaveMatch} onLiveUpdate={onLiveUpdate} />;
-}
-
-// --- 3. PUBLIK VY (Med live-uppdatering av ställning) ---
-function PublicView({ matchData }) {
-  const totalHomeMatches = matchData.subMatches.reduce((acc, sm) => acc + (sm.status === 'completed' && sm.homeScore > sm.awayScore ? 1 : 0), 0);
-  const totalAwayMatches = matchData.subMatches.reduce((acc, sm) => acc + (sm.status === 'completed' && sm.awayScore > sm.homeScore ? 1 : 0), 0);
-
-  const totalHomeLegs = matchData.subMatches.reduce((acc, sm) => acc + (sm.homeScore || 0), 0);
-  const totalAwayLegs = matchData.subMatches.reduce((acc, sm) => acc + (sm.awayScore || 0), 0);
-
-  const regularMatches = matchData.subMatches.filter(sm => sm.id !== 'AD');
-  const completedCount = regularMatches.filter(sm => sm.status === 'completed').length;
-  const progressPercent = Math.min(100, Math.round((completedCount / 10) * 100));
-
-  const groupPerformancesByPlayer = (perfs) => {
-    const map = {};
-    perfs.forEach(p => {
-      const name = p.player || 'Okänd spelare';
-      if (!map[name]) {
-        map[name] = [];
-      }
-      map[name].push(p.text);
-    });
-
-    return Object.keys(map).map(player => ({
-      player,
-      items: map[player]
-    }));
-  };
-
-  const homePerfGrouped = groupPerformancesByPlayer(matchData.performances.filter(p => p.team === 'home'));
-  const awayPerfGrouped = groupPerformancesByPlayer(matchData.performances.filter(p => p.team === 'away'));
-
-  const getBadgeStyle = (text) => {
-    if (text === '180') {
-      return { backgroundColor: '#f59e0b', color: '#0f172a', fontWeight: '900' };
-    }
-    if (text.includes('ut')) {
-      return { backgroundColor: '#10b981', color: '#fff', fontWeight: 'bold' };
-    }
-    if (text.includes('pil')) {
-      return { backgroundColor: '#3b82f6', color: '#fff', fontWeight: '500' };
-    }
-    return { backgroundColor: '#475569', color: '#fff' };
-  };
+// --- 3. PUBLIK VY (MED NY STOR & EXPANDERANDE DESIGN) ---
+function PublicView({ matchData, onSelectMatch }) {
+  // Beräkna total lagställning (totalt antal vunna matcher per lag)
+  const homeTotalMatches = matchData.subMatches.filter(m => m.homeScore === 3).length;
+  const awayTotalMatches = matchData.subMatches.filter(m => m.awayScore === 3).length;
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-
-      {/* MATCH HEADER KORT */}
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '25px', marginBottom: '20px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-            🎯 PUBSERIEN MATCHPROTOKOLL
-          </span>
-          <span style={{ fontSize: '14px', color: '#94a3b8' }}>
-            {completedCount === 10 ? '🏁 Match Avslutad' : `⚡ Spelade matcher: ${completedCount}/10`}
-          </span>
-        </div>
-
-        {/* Lagsammandrag med stor poäng */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '20px', padding: '10px 0' }}>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '32px', fontWeight: '900', color: '#fff', marginBottom: '6px', letterSpacing: '-1px' }}>
-              {matchData.homeTeam || 'HEMMALAG'}
-            </div>
-            <div style={{ fontSize: '14px', color: '#60a5fa', fontWeight: 'bold', textTransform: 'uppercase' }}>HEMMALAG</div>
+    <div style={{ maxWidth: '900px', margin: '0 auto', fontFamily: 'sans-serif', color: '#fff' }}>
+      
+      {/* Huvudresultat (Lag vs Lag) */}
+      <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid #1e293b', marginBottom: '20px', textAlign: 'center', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ flex: 1, fontSize: '24px', fontWeight: 'bold', color: '#60a5fa' }}>{matchData.homeTeam || 'Hemmalag'}</div>
+          <div style={{ backgroundColor: '#1e293b', padding: '10px 24px', borderRadius: '12px', border: '2px solid #334155' }}>
+            <span style={{ fontSize: '36px', fontWeight: '900', color: '#fcd34d' }}>{homeTotalMatches}</span>
+            <span style={{ fontSize: '24px', color: '#64748b', margin: '0 12px' }}>-</span>
+            <span style={{ fontSize: '36px', fontWeight: '900', color: '#fcd34d' }}>{awayTotalMatches}</span>
           </div>
-
-          <div style={{ textAlign: 'center', backgroundColor: '#0f172a', padding: '15px 30px', borderRadius: '12px', border: '1px solid #334155' }}>
-            <div style={{ fontSize: '56px', fontWeight: '900', color: '#fcd34d', lineHeight: 1, fontFamily: 'monospace' }}>
-              {totalHomeMatches} - {totalAwayMatches}
-            </div>
-            <div style={{ fontSize: '16px', color: '#94a3b8', marginTop: '8px', fontWeight: 'bold' }}>
-              Legs: {totalHomeLegs} - {totalAwayLegs}
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '32px', fontWeight: '900', color: '#fff', marginBottom: '6px', letterSpacing: '-1px' }}>
-              {matchData.awayTeam || 'BORTALAG'}
-            </div>
-            <div style={{ fontSize: '14px', color: '#f43f5e', fontWeight: 'bold', textTransform: 'uppercase' }}>BORTALAG</div>
-          </div>
-
+          <div style={{ flex: 1, fontSize: '24px', fontWeight: 'bold', color: '#f43f5e' }}>{matchData.awayTeam || 'Bortalag'}</div>
         </div>
-
-        {/* Framstegsmätare */}
-        <div style={{ marginTop: '20px', backgroundColor: '#0f172a', borderRadius: '10px', height: '10px', overflow: 'hidden', border: '1px solid #334155' }}>
-          <div style={{ width: `${progressPercent}%`, backgroundColor: '#3b82f6', height: '100%', transition: 'width 0.5s ease' }} />
-        </div>
-
       </div>
 
-      {/* MATCHTABELL */}
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', color: '#fff', fontSize: '16px' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#0f172a', color: '#94a3b8', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              <th style={{ padding: '15px 20px', textAlign: 'left', width: '38%' }}>{matchData.homeTeam || 'Hemmalag'}</th>
-              <th style={{ padding: '15px 10px', width: '8%' }}>Legs</th>
-              <th style={{ padding: '15px 10px', width: '8%' }}>Match</th>
-              <th style={{ padding: '15px 10px', width: '8%' }}>Legs</th>
-              <th style={{ padding: '15px 20px', textAlign: 'right', width: '38%' }}>{matchData.awayTeam || 'Bortalag'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {matchData.subMatches.map((sm, index) => {
-              const isHomeWinner = sm.status === 'completed' && sm.homeScore > sm.awayScore;
-              const isAwayWinner = sm.status === 'completed' && sm.awayScore > sm.homeScore;
-              const isLive = sm.status === 'live';
-              const isAD = sm.id === 'AD';
-              const isBlockEnd = sm.id === 'S3' || sm.id === 'D2';
+      {/* Matchlista med stor expanderande live-design */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+        {matchData.subMatches.map((sm) => {
+          const isLive = sm.status === 'live';
+          const isCompleted = sm.status === 'completed';
 
-              return (
-                <React.Fragment key={sm.id}>
-                  <tr style={{
-                    borderBottom: '1px solid #334155',
-                    backgroundColor: isLive ? 'rgba(16, 185, 129, 0.12)' : isAD ? 'rgba(234, 179, 8, 0.08)' : (index % 2 === 0 ? '#1e293b' : '#182232')
-                  }}>
-                    {/* Hemma Spelare */}
-                    <td style={{ padding: '15px 20px', textAlign: 'left', fontWeight: isHomeWinner ? '900' : '500', color: isHomeWinner ? '#34d399' : '#e2e8f0', fontSize: '18px' }}>
-                      {sm.homePlayer || '-'} {isHomeWinner && ' 🏆'}
-                    </td>
-
-                    {/* Hemma Legs & Live pilar */}
-                    <td style={{ padding: '15px 10px', fontWeight: '900', color: isHomeWinner ? '#34d399' : '#fff', fontSize: '20px', fontFamily: 'monospace' }}>
-                      {sm.status === 'completed' ? (
-                        sm.homeScore
-                      ) : isLive ? (
-                        <div>
-                          <div>{sm.homeScore}</div>
-                          <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 'normal' }}>({sm.currentHomePoints ?? 501}p)</div>
-                        </div>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-
-                    {/* Match ID Badge / LIVE Badge */}
-                    <td style={{ padding: '15px 10px' }}>
-                      {isLive ? (
-                        <span style={{ backgroundColor: '#10b981', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontWeight: '900', fontSize: '12px', letterSpacing: '0.5px' }}>
-                          LIVE
-                        </span>
-                      ) : (
-                        <span style={{ backgroundColor: isAD ? '#eab308' : '#334155', color: isAD ? '#0f172a' : '#fcd34d', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }}>
-                          {sm.id}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Borta Legs & Live pilar */}
-                    <td style={{ padding: '15px 10px', fontWeight: '900', color: isAwayWinner ? '#34d399' : '#fff', fontSize: '20px', fontFamily: 'monospace' }}>
-                      {sm.status === 'completed' ? (
-                        sm.awayScore
-                      ) : isLive ? (
-                        <div>
-                          <div>{sm.awayScore}</div>
-                          <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 'normal' }}>({sm.currentAwayPoints ?? 501}p)</div>
-                        </div>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-
-                    {/* Borta Spelare */}
-                    <td style={{ padding: '15px 20px', textAlign: 'right', fontWeight: isAwayWinner ? '900' : '500', color: isAwayWinner ? '#34d399' : '#e2e8f0', fontSize: '18px' }}>
-                      {isAwayWinner && '🏆 '} {sm.awayPlayer || '-'}
-                    </td>
-                  </tr>
-
-                  {/* Avskiljare mellan block */}
-                  {isBlockEnd && (
-                    <tr>
-                      <td colSpan="5" style={{ backgroundColor: '#0f172a', padding: '6px', borderBottom: '1px solid #334155' }} />
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* PRESTATIONER Sektion */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-
-        {/* Hemma prestationer */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#60a5fa', fontWeight: 'bold', fontSize: '16px', marginBottom: '15px', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
-            <span>🔥</span> PRESTATIONER: {matchData.homeTeam || 'HEMMALAG'}
-          </div>
-
-          {homePerfGrouped.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {homePerfGrouped.map((item, i) => (
-                <div key={i} style={{ backgroundColor: '#0f172a', padding: '12px 15px', borderRadius: '8px', border: '1px solid #334155' }}>
-                  <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '16px', marginBottom: '8px' }}>{item.player}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {item.items.map((t, idx) => (
-                      <span key={idx} style={{ ...getBadgeStyle(t), padding: '4px 10px', borderRadius: '4px', fontSize: '14px' }}>
-                        {t}
-                      </span>
-                    ))}
-                  </div>
+          return (
+            <div
+              key={sm.id}
+              onClick={() => onSelectMatch(sm)}
+              style={{
+                backgroundColor: isLive ? '#0f172a' : '#1e293b',
+                borderRadius: '12px',
+                padding: isLive ? '18px 20px' : '12px 16px',
+                border: isLive ? '2px solid #22c55e' : '1px solid #334155',
+                boxShadow: isLive ? '0 0 20px rgba(34, 197, 94, 0.25)' : 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                position: 'relative'
+              }}
+            >
+              {/* LIVE Badge när matchen spelas */}
+              {isLive && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <span style={{ width: '10px', height: '10px', backgroundColor: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 8px #22c55e' }}></span>
+                  <span style={{ color: '#22c55e', fontWeight: 'bold', fontSize: '13px', letterSpacing: '1px' }}>
+                    LIVE - MATCH {sm.id} ({sm.type === 'single' ? 'Singel' : 'Dubbel'})
+                  </span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ color: '#64748b', fontSize: '14px', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>Inga registrerade ännu</div>
-          )}
-        </div>
+              )}
 
-        {/* Borta prestationer */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '16px', border: '1px solid #334155', padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f43f5e', fontWeight: 'bold', fontSize: '16px', marginBottom: '15px', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
-            <span>🔥</span> PRESTATIONER: {matchData.awayTeam || 'BORTALAG'}
-          </div>
-
-          {awayPerfGrouped.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {awayPerfGrouped.map((item, i) => (
-                <div key={i} style={{ backgroundColor: '#0f172a', padding: '12px 15px', borderRadius: '8px', border: '1px solid #334155' }}>
-                  <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '16px', marginBottom: '8px' }}>{item.player}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {item.items.map((t, idx) => (
-                      <span key={idx} style={{ ...getBadgeStyle(t), padding: '4px 10px', borderRadius: '4px', fontSize: '14px' }}>
-                        {t}
-                      </span>
-                    ))}
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                {/* Hemmaspelare */}
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#eab308', width: '28px' }}>{sm.id}</span>
+                  <span style={{ fontSize: isLive ? '20px' : '16px', fontWeight: 'bold', color: sm.homeScore === 3 ? '#22c55e' : '#fff' }}>
+                    {sm.homePlayer || matchData.homeTeam || 'Hemmaspelare'}
+                  </span>
                 </div>
-              ))}
+
+                {/* Sifferboxar / Resultat i mitten */}
+                {isLive ? (
+                  // STORA SIFFERBOXAR FÖR LIVE-MATCH
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 15px' }}>
+                    {/* Home Leg */}
+                    <div style={{ backgroundColor: '#1e293b', color: '#fff', fontSize: '20px', fontWeight: 'bold', padding: '6px 14px', borderRadius: '8px', border: '1px solid #475569' }}>
+                      {sm.homeScore}
+                    </div>
+
+                    {/* Home Points Left Box */}
+                    <div style={{ backgroundColor: '#020617', color: '#ffee00', fontSize: '30px', fontWeight: '900', padding: '6px 16px', borderRadius: '8px', border: '2px solid #ffee00', minWidth: '85px', textAlign: 'center', letterSpacing: '1px' }}>
+                      {sm.currentHomePoints}
+                    </div>
+
+                    <span style={{ color: '#64748b', fontWeight: 'bold', fontSize: '14px' }}>VS</span>
+
+                    {/* Away Points Left Box */}
+                    <div style={{ backgroundColor: '#020617', color: '#ffee00', fontSize: '30px', fontWeight: '900', padding: '6px 16px', borderRadius: '8px', border: '2px solid #ffee00', minWidth: '85px', textAlign: 'center', letterSpacing: '1px' }}>
+                      {sm.currentAwayPoints}
+                    </div>
+
+                    {/* Away Leg */}
+                    <div style={{ backgroundColor: '#1e293b', color: '#fff', fontSize: '20px', fontWeight: 'bold', padding: '6px 14px', borderRadius: '8px', border: '1px solid #475569' }}>
+                      {sm.awayScore}
+                    </div>
+                  </div>
+                ) : (
+                  // Standardvisning för Ej påbörjad / Klar match
+                  <div style={{ backgroundColor: '#0f172a', padding: '6px 16px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: isCompleted ? '#fcd34d' : '#94a3b8' }}>{sm.homeScore}</span>
+                    <span style={{ color: '#475569', fontSize: '12px' }}>-</span>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: isCompleted ? '#fcd34d' : '#94a3b8' }}>{sm.awayScore}</span>
+                  </div>
+                )}
+
+                {/* Bortaspelare */}
+                <div style={{ flex: 1, textAlign: 'right' }}>
+                  <span style={{ fontSize: isLive ? '20px' : '16px', fontWeight: 'bold', color: sm.awayScore === 3 ? '#22c55e' : '#fff' }}>
+                    {sm.awayPlayer || matchData.awayTeam || 'Bortaspelare'}
+                  </span>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div style={{ color: '#64748b', fontSize: '14px', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>Inga registrerade ännu</div>
-          )}
-        </div>
-
+          );
+        })}
       </div>
 
-      {/* FOOTER STATISTIK KORT */}
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', padding: '15px', textAlign: 'center', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
-        <div>
-          <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>TOTALT 180:OR</div>
-          <div style={{ fontSize: '28px', fontWeight: '900', color: '#f59e0b', marginTop: '4px', fontFamily: 'monospace' }}>
-            🎯 {matchData.performances.filter(p => p.text === '180').length}
+      {/* Prestationssektion (180s & Höga utgångar) */}
+      <div style={{ backgroundColor: '#0f172a', padding: '16px', borderRadius: '12px', border: '1px solid #1e293b' }}>
+        <h3 style={{ color: '#fcd34d', margin: '0 0 12px 0', fontSize: '15px', fontWeight: 'bold' }}>⭐ MATCHNENS PRESTATIONER (180s / Utgångar)</h3>
+        {matchData.performances.length === 0 ? (
+          <div style={{ color: '#64748b', fontSize: '13px', fontStyle: 'italic' }}>Inga registrerade höga utgångar eller 180s än.</div>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {matchData.performances.map((p, idx) => (
+              <div key={idx} style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '6px', padding: '6px 12px', fontSize: '13px' }}>
+                <strong style={{ color: p.team === 'home' ? '#60a5fa' : '#f43f5e' }}>{p.player}</strong>: <span style={{ color: '#fcd34d', fontWeight: 'bold' }}>{p.text}</span>
+              </div>
+            ))}
           </div>
-        </div>
-        <div>
-          <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>100+ UTGÅNGAR</div>
-          <div style={{ fontSize: '28px', fontWeight: '900', color: '#10b981', marginTop: '4px', fontFamily: 'monospace' }}>
-            ✨ {matchData.performances.filter(p => p.text.includes('ut')).length}
-          </div>
-        </div>
-        <div>
-          <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', textTransform: 'uppercase' }}>SNABBA LEG (&lt;20 PIL)</div>
-          <div style={{ fontSize: '28px', fontWeight: '900', color: '#3b82f6', marginTop: '4px', fontFamily: 'monospace' }}>
-            ⚡ {matchData.performances.filter(p => p.text.includes('pil')).length}
-          </div>
-        </div>
+        )}
       </div>
-
     </div>
   );
 }
 
-export default function Home() {
-  const [currentView, setCurrentView] = useState('public');
-  const [activeSubMatchId, setActiveSubMatchId] = useState(null);
+// --- 4. HUVUDKOMPONENT (App) ---
+export default function App() {
+  const [activeTab, setActiveTab] = useState('public'); // 'public', 'admin', 'scorer'
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+
   const [matchData, setMatchData] = useState({
-    homeTeam: 'HEMMALAG',
-    awayTeam: 'BORTALAG',
+    homeTeam: 'Hemmalag',
+    awayTeam: 'Bortalag',
     subMatches: INITIAL_SUB_MATCHES,
     performances: []
   });
 
-  const handleLiveUpdate = (subMatchId, partialData, livePerformances = []) => {
+  const handleSelectMatch = (match) => {
+    setSelectedMatch(match);
+    setActiveTab('scorer');
+  };
+
+  const handleLiveUpdateFromScorer = (subMatchId, updatedSubMatchData, scorerPerformances) => {
     setMatchData(prev => {
-      const updatedSubMatches = prev.subMatches.map(m =>
-        m.id === subMatchId ? { ...m, ...partialData } : m
-      );
-
-      // Undvik dubletter av prestationer genom att kolla unika poster
-      const existingPerfs = [...prev.performances];
-      livePerformances.forEach(lp => {
-        const exists = existingPerfs.some(
-          p => p.player === lp.player && p.text === lp.text && p.team === lp.team
-        );
-        if (!exists) {
-          existingPerfs.push(lp);
-        }
-      });
-
+      const updatedMatches = prev.subMatches.map(sm => sm.id === subMatchId ? { ...sm, ...updatedSubMatchData } : sm);
       return {
         ...prev,
-        subMatches: updatedSubMatches,
-        performances: existingPerfs
+        subMatches: updatedMatches
       };
     });
   };
 
-  const handleUpdateSubMatch = (updatedSubMatch, newPerformances = []) => {
-    setMatchData(prev => ({
-      ...prev,
-      subMatches: prev.subMatches.map(m => m.id === updatedSubMatch.id ? { ...updatedSubMatch, status: 'completed' } : m),
-      performances: [...prev.performances, ...newPerformances]
-    }));
+  const handleSaveMatch = (updatedSubMatchData, newPerformances) => {
+    if (!selectedMatch) return;
+
+    setMatchData(prev => {
+      const updatedMatches = prev.subMatches.map(sm => sm.id === selectedMatch.id ? { ...sm, ...updatedSubMatchData } : sm);
+      const combinedPerformances = [...prev.performances, ...newPerformances];
+
+      return {
+        ...prev,
+        subMatches: updatedMatches,
+        performances: combinedPerformances
+      };
+    });
+
+    setActiveTab('public');
+    setSelectedMatch(null);
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#fff', paddingBottom: '30px', fontFamily: 'sans-serif' }}>
-      <nav style={{ backgroundColor: '#1e293b', padding: '10px', display: 'flex', justifyContent: 'center', gap: '10px', borderBottom: '1px solid #334155', position: 'sticky', top: 0, zIndex: 50 }}>
-        <button onClick={() => setCurrentView('admin')} style={{ backgroundColor: currentView === 'admin' ? '#2563eb' : '#334155', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>1. Admin</button>
-        <button onClick={() => setCurrentView('referee')} style={{ backgroundColor: currentView === 'referee' ? '#16a34a' : '#334155', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>2. Domare</button>
-        <button onClick={() => setCurrentView('public')} style={{ backgroundColor: currentView === 'public' ? '#9333ea' : '#334155', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>3. Publik (Matchprotokoll)</button>
-      </nav>
-      <main style={{ padding: '12px' }}>
-        {currentView === 'admin' && <AdminView matchData={matchData} setMatchData={setMatchData} isAdminAuthenticated={isAdminAuthenticated} setIsAdminAuthenticated={setIsAdminAuthenticated} />}
-        {currentView === 'referee' && <RefereeView matchData={matchData} activeSubMatchId={activeSubMatchId} setActiveSubMatchId={setActiveSubMatchId} onSaveMatch={handleUpdateSubMatch} onLiveUpdate={handleLiveUpdate} />}
-        {currentView === 'public' && <PublicView matchData={matchData} />}
-      </main>
+    <div style={{ minHeight: '100vh', backgroundColor: '#020617', padding: '15px', boxSizing: 'border-box' }}>
+      {/* Navigationsmeny längst upp */}
+      <div style={{ maxWidth: '900px', margin: '0 auto 20px auto', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+        <button
+          onClick={() => setActiveTab('public')}
+          style={{
+            backgroundColor: activeTab === 'public' ? '#2563eb' : '#1e293b',
+            color: '#fff',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          📺 Publikvy
+        </button>
+        <button
+          onClick={() => setActiveTab('admin')}
+          style={{
+            backgroundColor: activeTab === 'admin' ? '#2563eb' : '#1e293b',
+            color: '#fff',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          ⚙️ Admin
+        </button>
+      </div>
+
+      {/* Innehålls-vyer */}
+      {activeTab === 'public' && (
+        <PublicView matchData={matchData} onSelectMatch={handleSelectMatch} />
+      )}
+
+      {activeTab === 'admin' && (
+        <AdminView
+          matchData={matchData}
+          setMatchData={setMatchData}
+          isAdminAuthenticated={isAdminAuthenticated}
+          setIsAdminAuthenticated={setIsAdminAuthenticated}
+        />
+      )}
+
+      {activeTab === 'scorer' && selectedMatch && (
+        <N01Scorer
+          match={selectedMatch}
+          homeTeam={matchData.homeTeam}
+          awayTeam={matchData.awayTeam}
+          onBack={() => { setActiveTab('public'); setSelectedMatch(null); }}
+          onSave={handleSaveMatch}
+          onLiveUpdate={handleLiveUpdateFromScorer}
+        />
+      )}
     </div>
   );
 }
