@@ -1,8 +1,3 @@
-Här är den fullständiga, uppdaterade koden att ersätta din gamla kod/komponent med.
-
-Jag har integrerat den nya designen (Förslag 1 + 3) i PublicView (Publikvyn). När en match får statusen live expanderar raden, och poäng/legs visas i stora, tydliga neongula sifferboxar som är lättlästa från långt håll.
-
-JavaScript
 import React, { useState, useRef, useEffect } from 'react';
 
 const INITIAL_SUB_MATCHES = [
