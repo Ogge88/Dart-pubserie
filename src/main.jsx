@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const INITIAL_SUB_MATCHES = [
@@ -15,11 +15,10 @@ const INITIAL_SUB_MATCHES = [
   { id: 'AD', name: 'Avgörande Dubbel', type: 'double', homePlayer: '', awayPlayer: '', homeScore: 0, awayScore: 0, currentHomePoints: 501, currentAwayPoints: 501, status: 'pending' }
 ];
 
-const HOME_STARTS_MATCHES = ['S1', 'D1', 'S4', 'S6', 'S7'];
 const IMPOSSIBLE_SCORES = [163, 166, 169, 172, 173, 175, 176, 178, 179];
 const IMPOSSIBLE_CHECKOUTS = [159, 162, 163, 165, 166, 168, 169];
 
-// --- 1. DOMARVY (LIVE-PROTOKOLL) ---
+// --- DOMARVY (LIVE PROTOKOLL) ---
 function RefereeView({ matchData, setMatchData }) {
   const [selectedMatchId, setSelectedMatchId] = useState(matchData.subMatches[0]?.id || 'S1');
   const [inputScore, setInputScore] = useState('');
@@ -49,7 +48,6 @@ function RefereeView({ matchData, setMatchData }) {
     let updatedMatch = { ...currentMatch };
 
     if (newPoints === 0) {
-      // Leg vunnet
       if (isHome) {
         updatedMatch.homeScore += 1;
         if (score >= 100) {
@@ -66,7 +64,6 @@ function RefereeView({ matchData, setMatchData }) {
         updatedMatch.status = 'completed';
       }
 
-      // Återställ leg-poäng till 501
       updatedMatch.currentHomePoints = 501;
       updatedMatch.currentAwayPoints = 501;
     } else {
@@ -97,7 +94,7 @@ function RefereeView({ matchData, setMatchData }) {
         <select value={selectedMatchId} onChange={(e) => setSelectedMatchId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#0f172a', color: '#fff', border: '1px solid #475569' }}>
           {matchData.subMatches.map(m => (
             <option key={m.id} value={m.id}>
-              {m.id} - {m.homePlayer || 'Hemma'} vs {m.awayPlayer || 'Borta'} ({m.homeScore}-{m.awayScore})
+              {m.id} ({m.name}) - {m.homePlayer || 'Hemma'} vs {m.awayPlayer || 'Borta'} ({m.homeScore}-{m.awayScore})
             </option>
           ))}
         </select>
@@ -122,20 +119,20 @@ function RefereeView({ matchData, setMatchData }) {
       <form onSubmit={handleScoreSubmit} style={{ display: 'flex', gap: '10px' }}>
         <input
           type="number"
-          placeholder="Ange poäng (t.ex. 60, 100, 180)"
+          placeholder="Mata in kastad poäng..."
           value={inputScore}
           onChange={(e) => setInputScore(e.target.value)}
           style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#fff', fontSize: '18px' }}
         />
         <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px' }}>
-          Mata in
+          Spara
         </button>
       </form>
     </div>
   );
 }
 
-// --- 2. ADMIN VY ---
+// --- ADMIN VY ---
 function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAuthenticated }) {
   const [passwordInput, setPasswordInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -194,16 +191,9 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
       return;
     }
 
-    const newPerf = {
-      id: Date.now(),
-      team: newPerfTeam,
-      player: newPerfPlayer.trim(),
-      text: textToSave
-    };
-
     setMatchData(prev => ({
       ...prev,
-      performances: [...prev.performances, newPerf]
+      performances: [...prev.performances, { id: Date.now(), team: newPerfTeam, player: newPerfPlayer.trim(), text: textToSave }]
     }));
 
     setNewPerfPlayer('');
@@ -226,7 +216,7 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
         <form onSubmit={handleLogin}>
           <input
             type="password"
-            placeholder="Ange lösenord"
+            placeholder="Ange lösenord (admin)"
             value={passwordInput}
             onChange={(e) => setPasswordInput(e.target.value)}
             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#fff', fontSize: '16px', marginBottom: '12px', boxSizing: 'border-box' }}
@@ -241,9 +231,9 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <h1 style={{ color: '#60a5fa', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Admin - Redigering av resultat & prestationer</h1>
+        <h1 style={{ color: '#60a5fa', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Admin - Inställningar & Matcher</h1>
         <button onClick={() => setIsAdminAuthenticated(false)} style={{ backgroundColor: '#475569', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>
           🔒 Lås Admin
         </button>
@@ -261,27 +251,24 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
       </div>
 
       <div style={{ backgroundColor: '#1e293b', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-        <h2 style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>SPELARE OCH RESULTAT PER MATCH</h2>
-
+        <h2 style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>SPELARE OCH RESULTAT</h2>
         {matchData.subMatches.map((sm) => (
           <div key={sm.id} style={{ borderBottom: '1px solid #334155', paddingBottom: '10px', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span style={{ width: '30px', color: '#eab308', fontWeight: 'bold', textAlign: 'center' }}>{sm.id}</span>
-              <input placeholder={`Spelare ${matchData.homeTeam}`} value={sm.homePlayer} onChange={(e) => handleSubMatchChange(sm.id, 'homePlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
+              <span style={{ width: '30px', color: '#eab308', fontWeight: 'bold' }}>{sm.id}</span>
+              <input placeholder="Spelare Hemmalag" value={sm.homePlayer} onChange={(e) => handleSubMatchChange(sm.id, 'homePlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
               <span style={{ color: '#64748b', fontSize: '12px' }}>VS</span>
-              <input placeholder={`Spelare ${matchData.awayTeam}`} value={sm.awayPlayer} onChange={(e) => handleSubMatchChange(sm.id, 'awayPlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
+              <input placeholder="Spelare Bortalag" value={sm.awayPlayer} onChange={(e) => handleSubMatchChange(sm.id, 'awayPlayer', e.target.value)} style={{ flex: 1, backgroundColor: '#334155', color: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #475569' }} />
             </div>
-
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#94a3b8' }}>
               <span>Legs:</span>
-              <input type="number" min="0" max="3" value={sm.homeScore} onChange={(e) => handleSubMatchChange(sm.id, 'homeScore', e.target.value)} style={{ width: '45px', backgroundColor: '#0f172a', color: '#fcd34d', border: '1px solid #475569', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold', padding: '2px' }} />
+              <input type="number" min="0" max="3" value={sm.homeScore} onChange={(e) => handleSubMatchChange(sm.id, 'homeScore', e.target.value)} style={{ width: '45px', backgroundColor: '#0f172a', color: '#fcd34d', border: '1px solid #475569', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold' }} />
               <span>-</span>
-              <input type="number" min="0" max="3" value={sm.awayScore} onChange={(e) => handleSubMatchChange(sm.id, 'awayScore', e.target.value)} style={{ width: '45px', backgroundColor: '#0f172a', color: '#fcd34d', border: '1px solid #475569', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold', padding: '2px' }} />
-
+              <input type="number" min="0" max="3" value={sm.awayScore} onChange={(e) => handleSubMatchChange(sm.id, 'awayScore', e.target.value)} style={{ width: '45px', backgroundColor: '#0f172a', color: '#fcd34d', border: '1px solid #475569', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold' }} />
               <select value={sm.status} onChange={(e) => handleSubMatchChange(sm.id, 'status', e.target.value)} style={{ backgroundColor: '#0f172a', color: '#fff', border: '1px solid #475569', borderRadius: '4px', padding: '3px 6px' }}>
                 <option value="pending">Ej påbörjad</option>
                 <option value="live">Pågår (LIVE)</option>
-                <option value="completed">Klar (Spelad)</option>
+                <option value="completed">Klar</option>
               </select>
             </div>
           </div>
@@ -290,82 +277,42 @@ function AdminView({ matchData, setMatchData, isAdminAuthenticated, setIsAdminAu
 
       <div style={{ backgroundColor: '#1e293b', padding: '15px', borderRadius: '8px' }}>
         <h2 style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 'bold', marginBottom: '12px' }}>MANUELLA PRESTATIONER</h2>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1.5fr auto', gap: '8px', marginBottom: '15px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1.5fr auto', gap: '8px', marginBottom: '15px' }}>
           <select value={newPerfTeam} onChange={(e) => setNewPerfTeam(e.target.value)} style={{ backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569' }}>
-            <option value="home">{matchData.homeTeam || 'Hemmalag'}</option>
-            <option value="away">{matchData.awayTeam || 'Bortalag'}</option>
+            <option value="home">{matchData.homeTeam}</option>
+            <option value="away">{matchData.awayTeam}</option>
           </select>
-
-          <input
-            placeholder="Spelarnamn"
-            value={newPerfPlayer}
-            onChange={(e) => setNewPerfPlayer(e.target.value)}
-            style={{ backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569' }}
-          />
-
+          <input placeholder="Spelarnamn" value={newPerfPlayer} onChange={(e) => setNewPerfPlayer(e.target.value)} style={{ backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569' }} />
           <select value={newPerfTextType} onChange={(e) => setNewPerfTextType(e.target.value)} style={{ backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569' }}>
             <option value="180">180</option>
             <option value="utgang">Hög utgång (100+)</option>
             <option value="custom">Annan text...</option>
           </select>
-
-          <button onClick={handleAddManualPerformance} style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>
-            + Lägg till
-          </button>
+          <button onClick={handleAddManualPerformance} style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>+ Lägg till</button>
         </div>
 
         {newPerfTextType === 'utgang' && (
-          <div style={{ marginBottom: '15px' }}>
-            <input
-              type="number"
-              placeholder="Ange utgångspoäng (t.ex. 143)"
-              value={manualCheckoutScore}
-              onChange={(e) => setManualCheckoutScore(e.target.value)}
-              style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', boxSizing: 'border-box' }}
-            />
-          </div>
+          <input type="number" placeholder="Utgångspoäng (t.ex. 140)" value={manualCheckoutScore} onChange={(e) => setManualCheckoutScore(e.target.value)} style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', marginBottom: '10px', boxSizing: 'border-box' }} />
         )}
-
         {newPerfTextType === 'custom' && (
-          <div style={{ marginBottom: '15px' }}>
-            <input
-              placeholder="Skriv t.ex: 15 pilars leg"
-              value={customPerfText}
-              onChange={(e) => setCustomPerfText(e.target.value)}
-              style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', boxSizing: 'border-box' }}
-            />
-          </div>
+          <input placeholder="Beskrivning..." value={customPerfText} onChange={(e) => setCustomPerfText(e.target.value)} style={{ width: '100%', backgroundColor: '#334155', color: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #475569', marginBottom: '10px', boxSizing: 'border-box' }} />
         )}
 
-        <div style={{ backgroundColor: '#0f172a', padding: '10px', borderRadius: '6px', border: '1px solid #334155' }}>
-          <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', marginBottom: '8px' }}>BEFINTLIGA PRESTATIONER ({matchData.performances.length}):</div>
-          {matchData.performances.length === 0 ? (
-            <div style={{ color: '#64748b', fontSize: '13px', fontStyle: 'italic' }}>Inga prestationer registrerade ännu.</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {matchData.performances.map((p, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '6px 10px', borderRadius: '4px', fontSize: '13px' }}>
-                  <span>
-                    <strong style={{ color: p.team === 'home' ? '#60a5fa' : '#f43f5e' }}>
-                      [{p.team === 'home' ? matchData.homeTeam : matchData.awayTeam}]
-                    </strong>{' '}
-                    {p.player} – <span style={{ color: '#fcd34d' }}>{p.text}</span>
-                  </span>
-                  <button onClick={() => handleRemovePerformance(idx)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>
-                    Ta bort
-                  </button>
-                </div>
-              ))}
+        <div style={{ backgroundColor: '#0f172a', padding: '10px', borderRadius: '6px' }}>
+          <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', marginBottom: '8px' }}>BEFINTLIGA PRESTATIONER:</div>
+          {matchData.performances.map((p, idx) => (
+            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '6px 10px', borderRadius: '4px', fontSize: '13px', marginBottom: '4px' }}>
+              <span><strong style={{ color: p.team === 'home' ? '#60a5fa' : '#f43f5e' }}>[{p.team === 'home' ? matchData.homeTeam : matchData.awayTeam}]</strong> {p.player} – <span style={{ color: '#fcd34d' }}>{p.text}</span></span>
+              <button onClick={() => handleRemovePerformance(idx)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>Ta bort</button>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-// --- 3. HUVUDAPPEN MELLAN VYER ---
+// --- HUVUDAPP ---
 function App() {
   const [activeTab, setActiveTab] = useState('public');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
@@ -408,7 +355,7 @@ function App() {
             <h3 style={{ color: '#94a3b8', margin: '0 0 10px 0' }}>Matcher</h3>
             {matchData.subMatches.map((m) => (
               <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderBottom: '1px solid #334155' }}>
-                <span>{m.name}: {m.homePlayer || 'TBD'} vs {m.awayPlayer || 'TBD'}</span>
+                <span><strong>{m.id}</strong> ({m.name}): {m.homePlayer || 'TBD'} vs {m.awayPlayer || 'TBD'}</span>
                 <span style={{ fontWeight: 'bold', color: '#38bdf8' }}>{m.homeScore} - {m.awayScore}</span>
               </div>
             ))}
@@ -429,23 +376,12 @@ function App() {
         </div>
       )}
 
-      {activeTab === 'referee' && (
-        <RefereeView matchData={matchData} setMatchData={setMatchData} />
-      )}
-
-      {activeTab === 'admin' && (
-        <AdminView
-          matchData={matchData}
-          setMatchData={setMatchData}
-          isAdminAuthenticated={isAdminAuthenticated}
-          setIsAdminAuthenticated={setIsAdminAuthenticated}
-        />
-      )}
+      {activeTab === 'referee' && <RefereeView matchData={matchData} setMatchData={setMatchData} />}
+      {activeTab === 'admin' && <AdminView matchData={matchData} setMatchData={setMatchData} isAdminAuthenticated={isAdminAuthenticated} setIsAdminAuthenticated={setIsAdminAuthenticated} />}
     </div>
   );
 }
 
-// Koppla till HTML
 const rootElement = document.getElementById('root');
 if (rootElement) {
   createRoot(rootElement).render(<App />);
